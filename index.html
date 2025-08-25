@@ -1,1 +1,445 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo List App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .list {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f8f8f8;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: grab;
+    }
+    .list-header.dragging {
+      opacity: 0.5;
+    }
+    .item {
+      padding: 8px;
+      margin: 5px 0;
+      background-color: #fff;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      cursor: grab;
+    }
+    .item.dragging {
+      opacity: 0.5;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .delete-btn {
+      background-color: #dc3545;
+    }
+    .delete-btn:hover {
+      background-color: #c82333;
+    }
+    .edit-btn {
+      background-color: #28a745;
+    }
+    .edit-btn:hover {
+      background-color: #218838;
+    }
+    .form-container {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-container">
+      <input type="text" id="newListInput" placeholder="New list name">
+      <button onclick="addList()">Add List</button>
+    </div>
+    <div id="listsContainer"></div>
+  </div>
+
+  <script>
+    let data = {
+      lists: [
+        { id: 14, name: "Project (Hard Part Is Start)", position: 1 },
+        { id: 1, name: "Wants", position: 2 },
+        { id: 8, name: "Next Vehicle", position: 3 },
+        { id: 13, name: "Plan", position: 4 },
+        { id: 2, name: "Locations", position: 5 },
+        { id: 4, name: "CSS", position: 6 },
+        { id: 12, name: "Inner Favorites", position: 7 },
+        { id: 3, name: "Sports", position: 8 },
+        { id: 9, name: "List Ideas", position: 9 },
+        { id: 5, name: "TV Shows", position: 10 },
+        { id: 10, name: "Feel Good", position: 11 },
+        { id: 6, name: "Top Friends", position: 12 }
+      ],
+      items: [
+        { id: 69, list_id: 9, text: "Songs To Perform", position: 48 },
+        { id: 70, list_id: 9, text: "Current Job Pain Points", position: 49 },
+        { id: 71, list_id: 9, text: "Past Job Ranked", position: 50 },
+        { id: 72, list_id: 9, text: "New Job Requirements", position: 51 },
+        { id: 73, list_id: 9, text: "Job Options", position: 52 },
+        { id: 74, list_id: 9, text: "Bands", position: 53 },
+        { id: 75, list_id: 9, text: "Restaurants", position: 54 },
+        { id: 76, list_id: 9, text: "Best Vacations", position: 55 },
+        { id: 82, list_id: 10, text: "Getting The Job Done", position: 57 },
+        { id: 20, list_id: 3, text: "Pickle-balls", position: 1 },
+        { id: 21, list_id: 3, text: "Foosball", position: 2 },
+        { id: 22, list_id: 3, text: "Pingpong", position: 3 },
+        { id: 23, list_id: 3, text: "Mountain Biking", position: 4 },
+        { id: 26, list_id: 3, text: "Kickball", position: 6 },
+        { id: 25, list_id: 3, text: "Cornhole", position: 7 },
+        { id: 98, list_id: 12, text: "Projects", position: 1 },
+        { id: 84, list_id: 12, text: "Insights", position: 2 },
+        { id: 85, list_id: 12, text: "Mastery", position: 3 },
+        { id: 86, list_id: 12, text: "Learning", position: 4 },
+        { id: 14, list_id: 2, text: "West Knoxville", position: 1 },
+        { id: 13, list_id: 2, text: "Maryville", position: 2 },
+        { id: 12, list_id: 2, text: "Clearwater", position: 3 },
+        { id: 11, list_id: 2, text: "Wesley Chapel", position: 4 },
+        { id: 36, list_id: 5, text: "The Walking Dead Up To Season 4", position: 1 },
+        { id: 37, list_id: 5, text: "Game Of Thrones", position: 2 },
+        { id: 38, list_id: 5, text: "White Lotus", position: 3 },
+        { id: 39, list_id: 5, text: "Breaking Bad", position: 4 },
+        { id: 40, list_id: 5, text: "Spartacus", position: 5 },
+        { id: 41, list_id: 5, text: "Obsession", position: 6 },
+        { id: 42, list_id: 5, text: "Fortitude Season 1", position: 7 },
+        { id: 43, list_id: 5, text: "Dard Desire Season 1", position: 8 },
+        { id: 44, list_id: 5, text: "Lost Season 1", position: 9 },
+        { id: 45, list_id: 5, text: "The Last Of Us Season 1", position: 10 },
+        { id: 99, list_id: 8, text: "Model Y", position: 1 },
+        { id: 101, list_id: 8, text: "Model 3", position: 2 },
+        { id: 77, list_id: 8, text: "Tiguan", position: 3 },
+        { id: 93, list_id: 8, text: "Jetta", position: 4 },
+        { id: 90, list_id: 8, text: "Rav4", position: 6 },
+        { id: 67, list_id: 8, text: "CR-V", position: 7 },
+        { id: 59, list_id: 8, text: "Elantra", position: 8 },
+        { id: 60, list_id: 8, text: "Tucson", position: 9 },
+        { id: 62, list_id: 8, text: "Sonata", position: 10 },
+        { id: 92, list_id: 8, text: "Tacoma", position: 11 },
+        { id: 87, list_id: 13, text: "Hybrid Web Dev Job In Knoxville", position: 1 },
+        { id: 97, list_id: 13, text: "$80k", position: 2 },
+        { id: 94, list_id: 13, text: "15 Vacation", position: 3 },
+        { id: 95, list_id: 13, text: "Health Insurance", position: 4 },
+        { id: 96, list_id: 13, text: "401k", position: 5 },
+        { id: 46, list_id: 6, text: "Richard", position: 1 },
+        { id: 47, list_id: 6, text: "Alwyn", position: 2 },
+        { id: 48, list_id: 6, text: "Simon", position: 3 },
+        { id: 49, list_id: 6, text: "Stephen", position: 4 },
+        { id: 50, list_id: 6, text: "Gerrit", position: 5 },
+        { id: 51, list_id: 6, text: "Luiz", position: 6 },
+        { id: 52, list_id: 6, text: "Chris", position: 7 },
+        { id: 53, list_id: 6, text: "Bryan", position: 8 },
+        { id: 2, list_id: 1, text: "Healthy Family", position: 1 },
+        { id: 3, list_id: 1, text: "Family Financial Secure", position: 2 },
+        { id: 8, list_id: 1, text: "Project", position: 3 },
+        { id: 6, list_id: 1, text: "Pickleball", position: 4 },
+        { id: 5, list_id: 1, text: "Chatting With Mates", position: 5 },
+        { id: 4, list_id: 1, text: "PAW", position: 6 },
+        { id: 7, list_id: 1, text: "Insights", position: 7 },
+        { id: 1, list_id: 1, text: "F T", position: 8 },
+        { id: 28, list_id: 4, text: ".t {}", position: 1 },
+        { id: 27, list_id: 4, text: ".pa {}", position: 2 },
+        { id: 29, list_id: 4, text: ".sk {}", position: 3 },
+        { id: 30, list_id: 4, text: ".em {}", position: 4 },
+        { id: 31, list_id: 4, text: ".tr {}", position: 5 },
+        { id: 32, list_id: 4, text: ".me {}", position: 6 },
+        { id: 33, list_id: 4, text: ".mi {}", position: 7 },
+        { id: 34, list_id: 4, text: ".ze {}", position: 8 },
+        { id: 35, list_id: 4, text: ".ke {}", position: 9 },
+        { id: 102, list_id: 14, text: "Clean Upstairs", position: 1 },
+        { id: 103, list_id: 14, text: "Work On Brighton Bank", position: 4 },
+        { id: 108, list_id: 14, text: "Work On Cards For Website", position: 5 },
+        { id: 104, list_id: 14, text: "Wash Car", position: 6 }
+      ]
+    };
+
+    function renderLists() {
+      const container = document.getElementById('listsContainer');
+      container.innerHTML = '';
+      data.lists.sort((a, b) => a.position - b.position).forEach(list => {
+        const listElement = document.createElement('div');
+        listElement.className = 'list';
+        listElement.setAttribute('draggable', 'true');
+        listElement.setAttribute('data-list-id', list.id);
+        listElement.innerHTML = `
+          <div class="list-header" draggable="true" data-list-id="${list.id}">
+            <h2>${list.name}</h2>
+            <div>
+              <button class="edit-btn" onclick="editList(${list.id})">Edit</button>
+              <button class="delete-btn" onclick="deleteList(${list.id})">Delete</button>
+            </div>
+          </div>
+          <div class="form-container">
+            <input type="text" id="newItemInput-${list.id}" placeholder="New item">
+            <button onclick="addItem(${list.id})">Add Item</button>
+          </div>
+          <div class="items" id="items-${list.id}"></div>
+        `;
+        container.appendChild(listElement);
+        renderItems(list.id);
+      });
+
+      // Add drag and drop event listeners for lists
+      const listElements = container.querySelectorAll('.list');
+      listElements.forEach(list => {
+        list.addEventListener('dragstart', handleDragStart);
+        list.addEventListener('dragover', handleDragOver);
+        list.addEventListener('drop', handleDrop);
+        list.addEventListener('dragend', handleDragEnd);
+        list.addEventListener('touchstart', handleTouchStart, { passive: false });
+        list.addEventListener('touchmove', handleTouchMove, { passive: false });
+        list.addEventListener('touchend', handleTouchEnd);
+      });
+    }
+
+    function renderItems(listId) {
+      const itemsContainer = document.getElementById(`items-${listId}`);
+      itemsContainer.innerHTML = '';
+      const items = data.items.filter(item => item.list_id === listId)
+        .sort((a, b) => a.position - b.position);
+      items.forEach(item => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'item';
+        itemElement.setAttribute('draggable', 'true');
+        itemElement.setAttribute('data-item-id', item.id);
+        itemElement.innerHTML = `
+          <span>${item.text}</span>
+          <div>
+            <button class="edit-btn" onclick="editItem(${item.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteItem(${item.id})">Delete</button>
+          </div>
+        `;
+        itemsContainer.appendChild(itemElement);
+      });
+
+      // Add drag and drop event listeners for items
+      const itemElements = itemsContainer.querySelectorAll('.item');
+      itemElements.forEach(item => {
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleItemDrop);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('touchstart', handleTouchStart, { passive: false });
+        item.addEventListener('touchmove', handleTouchMove, { passive: false });
+        item.addEventListener('touchend', handleTouchEnd);
+      });
+    }
+
+    function addList() {
+      const input = document.getElementById('newListInput');
+      const name = input.value.trim();
+      if (name) {
+        const newId = Math.max(...data.lists.map(l => l.id), 0) + 1;
+        const newPosition = Math.max(...data.lists.map(l => l.position), 0) + 1;
+        data.lists.push({ id: newId, name, position: newPosition });
+        input.value = '';
+        renderLists();
+      }
+    }
+
+    function editList(listId) {
+      const newName = prompt('Enter new list name:', data.lists.find(l => l.id === listId).name);
+      if (newName) {
+        const list = data.lists.find(l => l.id === listId);
+        list.name = newName;
+        renderLists();
+      }
+    }
+
+    function deleteList(listId) {
+      if (confirm('Are you sure you want to delete this list and its items?')) {
+        data.lists = data.lists.filter(l => l.id !== listId);
+        data.items = data.items.filter(i => i.list_id !== listId);
+        renderLists();
+      }
+    }
+
+    function addItem(listId) {
+      const input = document.getElementById(`newItemInput-${listId}`);
+      const text = input.value.trim();
+      if (text) {
+        const newId = Math.max(...data.items.map(i => i.id), 0) + 1;
+        const newPosition = Math.max(...data.items.filter(i => i.list_id === listId).map(i => i.position), 0) + 1;
+        data.items.push({ id: newId, list_id: listId, text, position: newPosition });
+        input.value = '';
+        renderItems(listId);
+      }
+    }
+
+    function editItem(itemId) {
+      const newText = prompt('Enter new item text:', data.items.find(i => i.id === itemId).text);
+      if (newText) {
+        const item = data.items.find(i => i.id === itemId);
+        item.text = newText;
+        renderItems(item.list_id);
+      }
+    }
+
+    function deleteItem(itemId) {
+      if (confirm('Are you sure you want to delete this item?')) {
+        const item = data.items.find(i => i.id === itemId);
+        data.items = data.items.filter(i => i.id !== itemId);
+        renderItems(item.list_id);
+      }
+    }
+
+    let draggedElement = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    function handleDragStart(e) {
+      draggedElement = e.target;
+      e.target.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', e.target.getAttribute('data-list-id') || e.target.getAttribute('data-item-id'));
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
+      const targetElement = e.target.closest('.list');
+      if (!targetElement || !draggedElement.classList.contains('list')) return;
+
+      const targetId = parseInt(targetElement.getAttribute('data-list-id'));
+      const draggedList = data.lists.find(l => l.id === draggedId);
+      const targetList = data.lists.find(l => l.id === targetId);
+
+      const tempPosition = draggedList.position;
+      draggedList.position = targetList.position;
+      targetList.position = tempPosition;
+
+      renderLists();
+    }
+
+    function handleItemDrop(e) {
+      e.preventDefault();
+      const draggedId = parseInt(e.dataTransfer.getData('text/plain'));
+      const targetElement = e.target.closest('.item');
+      if (!targetElement || !draggedElement.classList.contains('item')) return;
+
+      const targetId = parseInt(targetElement.getAttribute('data-item-id'));
+      const draggedItem = data.items.find(i => i.id === draggedId);
+      const targetItem = data.items.find(i => i.id === targetId);
+
+      if (draggedItem.list_id !== targetItem.list_id) {
+        draggedItem.list_id = targetItem.list_id;
+        draggedItem.position = targetItem.position;
+        renderItems(draggedItem.list_id);
+        return;
+      }
+
+      const tempPosition = draggedItem.position;
+      draggedItem.position = targetItem.position;
+      targetItem.position = tempPosition;
+
+      renderItems(draggedItem.list_id);
+    }
+
+    function handleDragEnd(e) {
+      e.target.classList.remove('dragging');
+      draggedElement = null;
+    }
+
+    function handleTouchStart(e) {
+      e.preventDefault();
+      draggedElement = e.target.closest('.list') || e.target.closest('.item');
+      if (!draggedElement) return;
+      draggedElement.classList.add('dragging');
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+
+    function handleTouchMove(e) {
+      e.preventDefault();
+      if (!draggedElement) return;
+      const touch = e.touches[0];
+      draggedElement.style.position = 'relative';
+      draggedElement.style.left = `${touch.clientX - touchStartX}px`;
+      draggedElement.style.top = `${touch.clientY - touchStartY}px`;
+    }
+
+    function handleTouchEnd(e) {
+      if (!draggedElement) return;
+      draggedElement.classList.remove('dragging');
+      draggedElement.style.position = '';
+      draggedElement.style.left = '';
+      draggedElement.style.top = '';
+
+      const touch = e.changedTouches[0];
+      const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+      const targetList = targetElement.closest('.list');
+      const targetItem = targetElement.closest('.item');
+
+      if (draggedElement.classList.contains('list') && targetList) {
+        const draggedId = parseInt(draggedElement.getAttribute('data-list-id'));
+        const targetId = parseInt(targetList.getAttribute('data-list-id'));
+        const draggedList = data.lists.find(l => l.id === draggedId);
+        const targetList = data.lists.find(l => l.id === targetId);
+
+        const tempPosition = draggedList.position;
+        draggedList.position = targetList.position;
+        targetList.position = tempPosition;
+
+        renderLists();
+      } else if (draggedElement.classList.contains('item') && targetItem) {
+        const draggedId = parseInt(draggedElement.getAttribute('data-item-id'));
+        const targetId = parseInt(targetItem.getAttribute('data-item-id'));
+        const draggedItem = data.items.find(i => i.id === draggedId);
+        const targetItem = data.items.find(i => i.id === targetId);
+
+        if (draggedItem.list_id !== targetItem.list_id) {
+          draggedItem.list_id = targetItem.list_id;
+          draggedItem.position = targetItem.position;
+          renderItems(draggedItem.list_id);
+        } else {
+          const tempPosition = draggedItem.position;
+          draggedItem.position = targetItem.position;
+          targetItem.position = tempPosition;
+          renderItems(draggedItem.list_id);
+        }
+      }
+
+      draggedElement = null;
+    }
+
+    // Initial render
+    renderLists();
+  </script>
+</body>
+</html>

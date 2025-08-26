@@ -15,6 +15,7 @@
         }
         .list-group-item, .list-item {
             cursor: move;
+            touch-action: none; /* Prevent default touch actions for smoother dragging */
         }
         .list-group-item.dragging, .list-item.dragging {
             background-color: #e9ecef;
@@ -22,7 +23,7 @@
             transform: scale(1.02);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-            transition: transform 0.1s ease, opacity 0.1s ease;
+            transition: transform 0.1s ease, opacity 0.1s ease, background-color 0.1s ease;
         }
         .offcanvas-title {
             cursor: pointer;
@@ -64,7 +65,6 @@
             border-radius: 5px;
             padding: 10px;
             margin-bottom: 8px;
-            cursor: move;
             transition: background-color 0.2s ease-in-out;
         }
         .list-item:hover {
@@ -81,12 +81,26 @@
         .list-group-item .list-actions {
             display: flex;
             gap: 5px;
-            visibility: hidden;
+            align-items: center;
         }
-        .list-group-item:hover .list-actions {
-            visibility: visible;
+        .list-actions i {
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 0.3rem;
         }
-        .item-actions .btn, .list-actions .btn {
+        .list-actions .fa-edit {
+            color: #0d6efd; /* Bootstrap primary color */
+        }
+        .list-actions .fa-trash-alt {
+            color: #dc3545; /* Bootstrap danger color */
+        }
+        .list-actions .fa-edit:hover {
+            color: #0945a1;
+        }
+        .list-actions .fa-trash-alt:hover {
+            color: #a61c2b;
+        }
+        .item-actions .btn {
             padding: 0.3rem 0.6rem;
             font-size: 0.8rem;
         }
@@ -215,15 +229,14 @@
             listItem.setAttribute('data-list-id', list.id);
             listItem.setAttribute('draggable', 'true');
             listItem.innerHTML = `
-                <i class="fas fa-grip-vertical me-2"></i>
                 <span class="list-name">${list.name}</span>
                 <div class="list-actions">
-                    <button class="btn btn-sm btn-info edit-list-btn" title="Edit List Name"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger delete-list-btn-menu" title="Delete List"><i class="fas fa-trash-alt"></i></button>
+                    <i class="fas fa-edit edit-list-btn" title="Edit List Name"></i>
+                    <i class="fas fa-trash-alt delete-list-btn-menu" title="Delete List"></i>
                 </div>
             `;
             listItem.addEventListener('click', (e) => {
-                // Prevent switching list when clicking edit/delete buttons or dragging
+                // Prevent switching list when clicking edit/delete icons or dragging
                 if (e.target.closest('.list-actions') || isDragging) {
                     e.stopPropagation();
                     return;
@@ -434,12 +447,13 @@
                     isDragging = true;
                     draggedElement = item;
                     e.dataTransfer.setData('text/plain', item.dataset.listId);
-                    setTimeout(() => item.classList.add('dragging'), 0);
+                    requestAnimationFrame(() => item.classList.add('dragging'));
                 });
 
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
+                        draggedElement.style.transform = '';
                         updateListPositions();
                         saveData();
                         draggedElement = null;
@@ -453,15 +467,17 @@
                 let touchMoved = false;
 
                 item.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('.list-actions')) return; // Prevent drag on edit/delete icons
                     e.stopPropagation();
                     startY = e.touches[0].clientY;
                     startTime = Date.now();
                     touchMoved = false;
                     draggedElement = item;
-                    draggedElement.classList.add('dragging');
-                });
+                    requestAnimationFrame(() => draggedElement.classList.add('dragging'));
+                }, { passive: true });
 
                 item.addEventListener('touchmove', (e) => {
+                    if (e.target.closest('.list-actions')) return;
                     e.preventDefault();
                     touchMoved = true;
                     const currentY = e.touches[0].clientY;
@@ -485,17 +501,17 @@
                     if (draggedElement) {
                         draggedElement.style.transform = '';
                         draggedElement.classList.remove('dragging');
-                        if (touchMoved) {
+                        if (touchMoved && Date.now() - startTime > 200) {
                             updateListPositions();
                             saveData();
-                        } else if (Date.now() - startTime < 500) {
+                        } else if (!touchMoved && Date.now() - startTime < 500) {
                             // Treat as a tap if no movement and short duration
                             switchToList(parseInt(draggedElement.dataset.listId));
                         }
                         draggedElement = null;
                         isDragging = false;
                     }
-                });
+                }, { passive: true });
             });
 
             listsMenu.addEventListener('dragover', (e) => {
@@ -532,12 +548,13 @@
                         itemId: item.dataset.itemId,
                         sourceListId: currentListId
                     }));
-                    setTimeout(() => item.classList.add('dragging'), 0);
+                    requestAnimationFrame(() => item.classList.add('dragging'));
                 });
 
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
+                        draggedElement.style.transform = '';
                         updateItemPositions();
                         saveData();
                         draggedElement = null;
@@ -551,15 +568,17 @@
                 let touchMoved = false;
 
                 item.addEventListener('touchstart', (e) => {
+                    if (e.target.closest('.item-actions')) return; // Prevent drag on edit/delete buttons
                     e.stopPropagation();
                     startY = e.touches[0].clientY;
                     startTime = Date.now();
                     touchMoved = false;
                     draggedElement = item;
-                    draggedElement.classList.add('dragging');
-                });
+                    requestAnimationFrame(() => draggedElement.classList.add('dragging'));
+                }, { passive: true });
 
                 item.addEventListener('touchmove', (e) => {
+                    if (e.target.closest('.item-actions')) return;
                     e.preventDefault();
                     touchMoved = true;
                     const currentY = e.touches[0].clientY;
@@ -583,14 +602,14 @@
                     if (draggedElement) {
                         draggedElement.style.transform = '';
                         draggedElement.classList.remove('dragging');
-                        if (touchMoved) {
+                        if (touchMoved && Date.now() - startTime > 200) {
                             updateItemPositions();
                             saveData();
                         }
                         draggedElement = null;
                         isDragging = false;
                     }
-                });
+                }, { passive: true });
             });
 
             itemsList.addEventListener('dragover', (e) => {

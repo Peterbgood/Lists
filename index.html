@@ -107,7 +107,7 @@
                 <button class="btn btn-primary" id="addListBtn"><i class="fas fa-plus"></i></button>
             </div>
             <ul class="list-group list-group-flush" id="listsMenu">
-            </ul>
+                </ul>
         </div>
     </div>
 
@@ -134,7 +134,7 @@
                 </div>
             </div>
             <ul class="list-items" id="itemsList">
-            </ul>
+                </ul>
             <div class="add-item-form mt-auto">
                 <input type="text" class="form-control add-item-input" placeholder="Add new item...">
                 <button class="btn btn-success btn-add-item"><i class="fas fa-plus"></i></button>
@@ -257,6 +257,7 @@
         const editListNameBtn = document.querySelector('.edit-list-name-btn');
 
         let draggedElement = null;
+        let dragTimer = null;
         let isDragging = false;
 
         // Function to save data to local storage
@@ -303,13 +304,14 @@
             listItem.setAttribute('draggable', 'true');
             listItem.innerHTML = `
                 <i class="fas fa-grip-vertical me-2"></i>
-                <span class="list-name flex-grow-1">${list.name}</span>
+                <span class="list-name">${list.name}</span>
                 <div class="btn-group">
                     <button class="btn btn-sm btn-outline-secondary edit-list-btn d-none" title="Edit List Name"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger delete-list-btn-menu d-none" title="Delete List"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
             listItem.addEventListener('click', (e) => {
+                // Prevent switching list when clicking edit/delete buttons
                 if (e.target.closest('.btn-group')) {
                     e.stopPropagation();
                     return;
@@ -329,6 +331,7 @@
                 currentListNameHeader.textContent = list.name;
                 renderItems(listId);
             }
+            // Close the offcanvas menu on mobile
             const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('offcanvasLists'));
             if (offcanvas) {
                 offcanvas.hide();
@@ -363,60 +366,124 @@
             return listItem;
         }
 
+        // Add event listeners for CRUD operations
         function addEventListeners() {
+            // Add new list
             addListBtn.addEventListener('click', () => {
                 const name = newListNameInput.value.trim();
-                if (name) { addList(name); newListNameInput.value = ''; }
+                if (name) {
+                    addList(name);
+                    newListNameInput.value = '';
+                }
             });
+
+            // Add new item
             addItemBtn.addEventListener('click', () => {
                 const text = addItemInput.value.trim();
-                if (text && currentListId !== null) { addItem(currentListId, text); addItemInput.value = ''; }
+                if (text && currentListId !== null) {
+                    addItem(currentListId, text);
+                    addItemInput.value = '';
+                }
             });
+
+            // Edit and Delete List/Item
             document.addEventListener('click', (e) => {
-                if (e.target.closest('.edit-list-name-btn') && currentListId !== null) { toggleInLineEdit('list', currentListId); }
-                if (e.target.closest('.delete-list-btn') && currentListId !== null) { deleteList(currentListId); }
-                if (e.target.closest('.delete-list-btn-menu')) { const listId = parseInt(e.target.closest('[data-list-id]').dataset.listId); deleteList(listId); }
-                if (e.target.closest('.edit-item-btn')) { const itemId = parseInt(e.target.closest('.list-item').dataset.itemId); toggleInLineEdit('item', itemId); }
-                if (e.target.closest('.delete-item-btn')) { const itemId = parseInt(e.target.closest('.list-item').dataset.itemId); deleteItem(itemId); }
+                // Edit List Name in main view
+                if (e.target.closest('.edit-list-name-btn') && currentListId !== null) {
+                    toggleInLineEdit('list', currentListId);
+                }
+                // Delete List from main view
+                if (e.target.closest('.delete-list-btn') && currentListId !== null) {
+                    deleteList(currentListId);
+                }
+                // Delete List from menu
+                if (e.target.closest('.delete-list-btn-menu')) {
+                    const listId = parseInt(e.target.closest('[data-list-id]').dataset.listId);
+                    deleteList(listId);
+                }
+                // Edit Item
+                if (e.target.closest('.edit-item-btn')) {
+                    const itemId = parseInt(e.target.closest('.list-item').dataset.itemId);
+                    toggleInLineEdit('item', itemId);
+                }
+                // Delete Item
+                if (e.target.closest('.delete-item-btn')) {
+                    const itemId = parseInt(e.target.closest('.list-item').dataset.itemId);
+                    deleteItem(itemId);
+                }
             });
+
+            // Export data
             exportBtn.addEventListener('click', exportData);
+            
+            // Import data
             importBtn.addEventListener('click', () => importFile.click());
             importFile.addEventListener('change', importData);
         }
 
-        function toggleInLineEdit(type, id) { /* ... (This function is unchanged) ... */ }
+        // Toggle in-line editing for list or item
+        function toggleInLineEdit(type, id) {
+            if (type === 'list') {
+                const list = todoData.lists.find(l => l.id === id);
+                if (!list) return;
 
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('[draggable="true"]:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
+                const originalName = currentListNameHeader.textContent;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalName;
+                input.className = 'form-control';
+                
+                currentListNameHeader.innerHTML = '';
+                currentListNameHeader.appendChild(input);
+                input.focus();
+
+                const saveEdit = () => {
+                    const newName = input.value.trim();
+                    if (newName && newName !== originalName) {
+                        editList(id, newName);
+                    }
+                    currentListNameHeader.innerHTML = newName;
+                };
+
+                input.addEventListener('blur', saveEdit);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        saveEdit();
+                    }
+                });
+            } else if (type === 'item') {
+                const item = todoData.items.find(i => i.id === id);
+                if (!item) return;
+
+                const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
+                const itemTextSpan = itemElement.querySelector('.item-text');
+                const originalText = itemTextSpan.textContent;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = originalText;
+                
+                itemTextSpan.innerHTML = '';
+                itemTextSpan.appendChild(input);
+                input.focus();
+
+                const saveEdit = () => {
+                    const newText = input.value.trim();
+                    if (newText && newText !== originalText) {
+                        editItem(id, newText);
+                    }
+                    itemTextSpan.innerHTML = newText;
+                };
+
+                input.addEventListener('blur', saveEdit);
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        saveEdit();
+                    }
+                });
+            }
         }
 
-        function updateListPositions() {
-            const listElements = [...listsMenu.querySelectorAll('.list-group-item')];
-            listElements.forEach((el, index) => {
-                const listId = parseInt(el.dataset.listId);
-                const list = todoData.lists.find(l => l.id === listId);
-                if (list) list.position = index + 1;
-            });
-        }
-
-        function updateItemPositions() {
-            const itemElements = [...itemsList.querySelectorAll('.list-item')];
-            itemElements.forEach((el, index) => {
-                const itemId = parseInt(el.dataset.itemId);
-                const item = todoData.items.find(i => i.id === itemId);
-                if (item) item.position = index + 1;
-            });
-        }
-        
+        // Handle drag and drop for lists and items
         function addListDragListeners() {
             const listItems = listsMenu.querySelectorAll('.list-group-item');
             listItems.forEach(item => {
@@ -427,6 +494,7 @@
                     e.dataTransfer.setData('text/plain', draggedElement.dataset.listId);
                     setTimeout(() => draggedElement.classList.add('dragging'), 0);
                 });
+
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
@@ -434,83 +502,84 @@
                         isDragging = false;
                     }
                 });
-            });
-            listsMenu.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(listsMenu, e.clientY);
-                const draggable = document.querySelector('.list-group-item.dragging');
-                if (draggable) {
-                    if (afterElement == null) {
-                        listsMenu.appendChild(draggable);
-                    } else {
-                        listsMenu.insertBefore(draggable, afterElement);
+
+                listsMenu.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(listsMenu, e.clientY);
+                    const draggable = document.querySelector('.list-group-item.dragging');
+                    if (draggable) {
+                        if (afterElement == null) {
+                            listsMenu.appendChild(draggable);
+                        } else {
+                            listsMenu.insertBefore(draggable, afterElement);
+                        }
                     }
-                }
-            });
-            listsMenu.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (!draggedElement) return;
-                updateListPositions();
-                saveData();
-            });
+                });
 
-            // --- CORRECTED Mobile Touch Drag & Drop ---
-            listItems.forEach(item => {
+                listsMenu.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (!draggedElement) return;
+                    updateListPositions();
+                    saveData();
+                });
+
+                // Mobile Touch Drag & Drop
                 let longPressTimer;
-                let initialTouchY, initialElementTop;
-
                 item.addEventListener('touchstart', (e) => {
+                    const startTouchY = e.touches[0].clientY;
                     const itemElement = e.currentTarget;
-                    const parentContainer = itemElement.parentElement;
-
-                    initialTouchY = e.touches[0].clientY;
-                    initialElementTop = itemElement.offsetTop;
                     isDragging = false;
-
+                    
                     longPressTimer = setTimeout(() => {
                         isDragging = true;
                         draggedElement = itemElement;
-                        draggedElement.style.width = `${draggedElement.offsetWidth}px`;
                         draggedElement.classList.add('dragging');
                         draggedElement.style.position = 'absolute';
-                        draggedElement.style.top = `${initialElementTop}px`;
-                    }, 500);
+                        draggedElement.style.width = draggedElement.offsetWidth + 'px';
+                        draggedElement.style.top = `${draggedElement.offsetTop}px`;
+                    }, 500); // 500ms for a long press
 
                     const handleTouchMove = (moveEvent) => {
                         if (!isDragging) {
                             clearTimeout(longPressTimer);
                             return;
                         }
+                        
                         moveEvent.preventDefault();
-                        const currentTouchY = moveEvent.touches[0].clientY;
-                        const dy = currentTouchY - initialTouchY;
-                        draggedElement.style.top = `${initialElementTop + dy}px`;
-                        const afterElement = getDragAfterElement(parentContainer, currentTouchY);
-                        if (afterElement === null) {
-                            parentContainer.appendChild(draggedElement);
-                        } else {
-                            parentContainer.insertBefore(draggedElement, afterElement);
+                        const moveTouchY = moveEvent.touches[0].clientY;
+                        const dy = moveTouchY - startTouchY;
+                        
+                        draggedElement.style.top = `${startTouchY + dy}px`;
+
+                        const afterElement = getDragAfterElement(listsMenu, moveTouchY);
+                        if (draggedElement && draggedElement !== afterElement) {
+                            if (afterElement == null) {
+                                listsMenu.appendChild(draggedElement);
+                            } else {
+                                listsMenu.insertBefore(draggedElement, afterElement);
+                            }
                         }
                     };
 
                     const handleTouchEnd = () => {
                         clearTimeout(longPressTimer);
-                        document.removeEventListener('touchmove', handleTouchMove);
-                        document.removeEventListener('touchend', handleTouchEnd);
-                        if (isDragging && draggedElement) {
-                            draggedElement.classList.remove('dragging');
+                        listsMenu.removeEventListener('touchmove', handleTouchMove);
+                        listsMenu.removeEventListener('touchend', handleTouchEnd);
+                        
+                        if (isDragging) {
                             draggedElement.style.position = '';
-                            draggedElement.style.top = '';
                             draggedElement.style.width = '';
+                            draggedElement.style.top = '';
+                            draggedElement.classList.remove('dragging');
                             updateListPositions();
                             saveData();
                         }
                         draggedElement = null;
                         isDragging = false;
                     };
-
-                    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    document.addEventListener('touchend', handleTouchEnd);
+                    
+                    listsMenu.addEventListener('touchmove', handleTouchMove, {passive: false});
+                    listsMenu.addEventListener('touchend', handleTouchEnd);
                 });
             });
         }
@@ -522,8 +591,13 @@
                 item.addEventListener('dragstart', (e) => {
                     isDragging = true;
                     draggedElement = e.target.closest('.list-item');
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        itemId: draggedElement.dataset.itemId,
+                        sourceListId: currentListId
+                    }));
                     setTimeout(() => draggedElement.classList.add('dragging'), 0);
                 });
+
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
@@ -531,74 +605,75 @@
                         isDragging = false;
                     }
                 });
-            });
-            itemsList.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(itemsList, e.clientY);
-                const draggable = document.querySelector('.list-item.dragging');
-                if (draggable) {
-                    if (afterElement == null) {
-                        itemsList.appendChild(draggable);
-                    } else {
-                        itemsList.insertBefore(draggable, afterElement);
+
+                itemsList.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(itemsList, e.clientY);
+                    const draggable = document.querySelector('.list-item.dragging');
+                    if (draggable) {
+                        if (afterElement == null) {
+                            itemsList.appendChild(draggable);
+                        } else {
+                            itemsList.insertBefore(draggable, afterElement);
+                        }
                     }
-                }
-            });
-            itemsList.addEventListener('drop', (e) => {
-                e.preventDefault();
-                if (!draggedElement) return;
-                updateItemPositions();
-                saveData();
-            });
+                });
 
-            // --- CORRECTED Mobile Touch Drag & Drop ---
-            listItems.forEach(item => {
+                itemsList.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (!draggedElement) return;
+                    updateItemPositions();
+                    saveData();
+                });
+
+                // Mobile Touch Drag & Drop
                 let longPressTimer;
-                let initialTouchY, initialElementTop;
-                
                 item.addEventListener('touchstart', (e) => {
+                    const startTouchY = e.touches[0].clientY;
                     const itemElement = e.currentTarget;
-                    const parentContainer = itemElement.parentElement;
-
-                    initialTouchY = e.touches[0].clientY;
-                    initialElementTop = itemElement.offsetTop;
                     isDragging = false;
-
+                    
                     longPressTimer = setTimeout(() => {
                         isDragging = true;
                         draggedElement = itemElement;
-                        draggedElement.style.width = `${draggedElement.offsetWidth}px`;
                         draggedElement.classList.add('dragging');
                         draggedElement.style.position = 'absolute';
-                        draggedElement.style.top = `${initialElementTop}px`;
-                    }, 500);
+                        draggedElement.style.width = draggedElement.offsetWidth + 'px';
+                        draggedElement.style.top = `${draggedElement.offsetTop}px`;
+                    }, 500); // 500ms for a long press
 
                     const handleTouchMove = (moveEvent) => {
                         if (!isDragging) {
                             clearTimeout(longPressTimer);
                             return;
                         }
+
                         moveEvent.preventDefault();
-                        const currentTouchY = moveEvent.touches[0].clientY;
-                        const dy = currentTouchY - initialTouchY;
-                        draggedElement.style.top = `${initialElementTop + dy}px`;
-                        const afterElement = getDragAfterElement(parentContainer, currentTouchY);
-                        if (afterElement === null) {
-                            parentContainer.appendChild(draggedElement);
-                        } else {
-                            parentContainer.insertBefore(draggedElement, afterElement);
+                        const moveTouchY = moveEvent.touches[0].clientY;
+                        const dy = moveTouchY - startTouchY;
+
+                        draggedElement.style.top = `${startTouchY + dy}px`;
+
+                        const afterElement = getDragAfterElement(itemsList, moveTouchY);
+                        if (draggedElement && draggedElement !== afterElement) {
+                            if (afterElement == null) {
+                                itemsList.appendChild(draggedElement);
+                            } else {
+                                itemsList.insertBefore(draggedElement, afterElement);
+                            }
                         }
                     };
 
                     const handleTouchEnd = () => {
                         clearTimeout(longPressTimer);
-                        document.removeEventListener('touchmove', handleTouchMove);
-                        document.removeEventListener('touchend', handleTouchEnd);
-                        if (isDragging && draggedElement) {
-                            draggedElement.classList.remove('dragging');
+                        itemsList.removeEventListener('touchmove', handleTouchMove);
+                        itemsList.removeEventListener('touchend', handleTouchEnd);
+
+                        if (isDragging) {
                             draggedElement.style.position = '';
-                            draggedElement.style.top = '';
                             draggedElement.style.width = '';
+                            draggedElement.style.top = '';
+                            draggedElement.classList.remove('dragging');
                             updateItemPositions();
                             saveData();
                         }
@@ -606,25 +681,53 @@
                         isDragging = false;
                     };
 
-                    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    document.addEventListener('touchend', handleTouchEnd);
+                    itemsList.addEventListener('touchmove', handleTouchMove, {passive: false});
+                    itemsList.addEventListener('touchend', handleTouchEnd);
                 });
             });
         }
+        
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.list-group-item:not(.dragging), .list-item:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
 
-        // --- Core Data Functions (Add, Edit, Delete, Import, Export) ---
-        // These functions are mostly unchanged and assumed to be correct.
-
+        // CRUD Functions
         function addList(name) {
-            const newList = {
-                id: Date.now(),
-                name: name,
-                position: todoData.lists.length + 1
-            };
-            todoData.lists.push(newList);
+            const newId = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.id)) + 1 : 1;
+            const newPosition = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.position)) + 1 : 1;
+            todoData.lists.push({ id: newId, name, position: newPosition });
+            sortData();
             renderListsMenu();
-            switchToList(newList.id);
             saveData();
+            switchToList(newId);
+        }
+
+        function deleteList(id) {
+            if (confirm('Are you sure you want to delete this list and all its items?')) {
+                todoData.lists = todoData.lists.filter(list => list.id !== id);
+                todoData.items = todoData.items.filter(item => item.list_id !== id);
+                renumberLists();
+                renumberItems();
+                renderListsMenu();
+                saveData();
+                if (currentListId === id) {
+                    if (todoData.lists.length > 0) {
+                        switchToList(todoData.lists[0].id);
+                    } else {
+                        currentListNameHeader.textContent = '';
+                        itemsList.innerHTML = '';
+                    }
+                }
+            }
         }
 
         function editList(id, newName) {
@@ -632,92 +735,135 @@
             if (list) {
                 list.name = newName;
                 renderListsMenu();
-                currentListNameHeader.textContent = newName;
-                saveData();
-            }
-        }
-        
-        function deleteList(id) {
-            if (confirm('Are you sure you want to delete this list and all its items?')) {
-                todoData.lists = todoData.lists.filter(l => l.id !== id);
-                todoData.items = todoData.items.filter(i => i.list_id !== id);
-                renderListsMenu();
-                if (currentListId === id) {
-                    if (todoData.lists.length > 0) {
-                        switchToList(todoData.lists[0].id);
-                    } else {
-                        currentListId = null;
-                        currentListNameHeader.textContent = 'No lists';
-                        itemsList.innerHTML = '';
-                    }
-                }
                 saveData();
             }
         }
 
         function addItem(listId, text) {
-            const itemsInList = todoData.items.filter(i => i.list_id === listId);
-            const newItem = {
-                id: Date.now(),
-                list_id: listId,
-                text: text,
-                position: itemsInList.length + 1
-            };
-            todoData.items.push(newItem);
+            const newId = todoData.items.length > 0 ? Math.max(...todoData.items.map(i => i.id)) + 1 : 1;
+            const listItems = todoData.items.filter(item => item.list_id === listId);
+            const newPosition = listItems.length > 0 ? Math.max(...listItems.map(i => i.position)) + 1 : 1;
+            todoData.items.push({ id: newId, list_id: listId, text, position: newPosition });
+            sortData();
             renderItems(listId);
             saveData();
         }
-        
+
+        function deleteItem(id) {
+            todoData.items = todoData.items.filter(item => item.id !== id);
+            renumberItems();
+            renderItems(currentListId);
+            saveData();
+        }
+
         function editItem(id, newText) {
             const item = todoData.items.find(i => i.id === id);
             if (item) {
                 item.text = newText;
+                renderItems(currentListId);
                 saveData();
             }
         }
-        
-        function deleteItem(id) {
-            todoData.items = todoData.items.filter(i => i.id !== id);
-            renderItems(currentListId);
-            saveData();
+
+        // Update positions of lists after a drag and drop action
+        function updateListPositions() {
+            const reorderedListElements = Array.from(listsMenu.querySelectorAll('.list-group-item'));
+            const reorderedLists = reorderedListElements.map((el, index) => {
+                return {
+                    id: parseInt(el.dataset.listId),
+                    position: index + 1
+                };
+            });
+            reorderedLists.forEach(updatedList => {
+                const listToUpdate = todoData.lists.find(list => list.id === updatedList.id);
+                if (listToUpdate) {
+                    listToUpdate.position = updatedList.position;
+                }
+            });
+            renumberLists();
+        }
+
+        // Update positions of items after a drag and drop action
+        function updateItemPositions() {
+            const reorderedItemElements = Array.from(itemsList.querySelectorAll('.list-item'));
+            const reorderedItems = reorderedItemElements.map((el, index) => {
+                return {
+                    id: parseInt(el.dataset.itemId),
+                    position: index + 1,
+                    list_id: currentListId
+                };
+            });
+            reorderedItems.forEach(updatedItem => {
+                const itemToUpdate = todoData.items.find(item => item.id === updatedItem.id);
+                if (itemToUpdate) {
+                    itemToUpdate.position = updatedItem.position;
+                }
+            });
+            renumberItems();
+        }
+
+        // Re-number positions of lists after a change
+        function renumberLists() {
+            todoData.lists.forEach((list, index) => {
+                list.position = index + 1;
+            });
         }
         
+        // Re-number positions of items after a change
+        function renumberItems() {
+            const listIds = todoData.lists.map(l => l.id);
+            listIds.forEach(listId => {
+                const itemsInList = todoData.items.filter(item => item.list_id === listId).sort((a, b) => a.position - b.position);
+                itemsInList.forEach((item, index) => {
+                    item.position = index + 1;
+                });
+            });
+        }
+
+        // Export data as JSON file
         function exportData() {
             const dataStr = JSON.stringify(todoData, null, 2);
-            const dataBlob = new Blob([dataStr], {type: "application/json"});
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.download = 'todo-data.json';
-            link.href = url;
-            link.click();
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'todo_data.json';
+            a.click();
             URL.revokeObjectURL(url);
         }
 
-        function importData(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const importedData = JSON.parse(e.target.result);
-                        if (importedData.lists && importedData.items) {
-                            todoData = importedData;
-                            saveData();
-                            loadData();
-                        } else {
-                            alert('Invalid data file.');
-                        }
-                    } catch (error) {
-                        alert('Error reading file.');
+        // Import data from JSON file
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const importedData = JSON.parse(event.target.result);
+                    // Simple validation for required structure
+                    if (importedData.lists && importedData.items) {
+                        todoData = importedData;
+                        sortData();
+                        renderListsMenu();
+                        switchToList(todoData.lists[0].id);
+                        saveData();
+                        alert('Data imported successfully!');
+                    } else {
+                        alert('Invalid JSON file format. Please import a valid file.');
                     }
-                };
-                reader.readAsText(file);
-            }
+                } catch (error) {
+                    alert('Failed to parse JSON file.');
+                }
+            };
+            reader.readAsText(file);
         }
 
-        // Initialize the app
-        loadData();
-        addEventListeners();
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            addEventListeners();
+        });
     </script>
 </body>
 </html>

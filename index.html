@@ -78,28 +78,6 @@
         .list-item:hover .item-actions {
             visibility: visible;
         }
-        .list-group-item .list-actions {
-            display: flex;
-            gap: 5px;
-            align-items: center;
-        }
-        .list-actions i {
-            font-size: 0.9rem;
-            cursor: pointer;
-            padding: 0.3rem;
-        }
-        .list-actions .fa-edit {
-            color: #0d6efd; /* Bootstrap primary color */
-        }
-        .list-actions .fa-trash-alt {
-            color: #dc3545; /* Bootstrap danger color */
-        }
-        .list-actions .fa-edit:hover {
-            color: #0945a1;
-        }
-        .list-actions .fa-trash-alt:hover {
-            color: #a61c2b;
-        }
         .item-actions .btn {
             padding: 0.3rem 0.6rem;
             font-size: 0.8rem;
@@ -117,6 +95,19 @@
         .import-export-buttons {
             padding: 1rem;
             border-top: 1px solid #e9ecef;
+        }
+        #currentListHeader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        #headerListName {
+            margin-bottom: 0.5rem;
+        }
+        .list-header-actions {
+            display: flex;
+            gap: 5px;
         }
     </style>
 </head>
@@ -143,17 +134,16 @@
     </div>
 
     <div class="container py-4">
-        <header class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="text-center mb-0 text-primary flex-grow-1" id="headerListName"></h1>
+        <header class="d-flex justify-content-end align-items-center mb-4">
             <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasLists" aria-controls="offcanvasLists">
                 <i class="fas fa-bars"></i> Lists
             </button>
         </header>
         
         <div id="mainContent" class="list-item-container">
-            <div id="currentListHeader" class="d-flex justify-content-between align-items-center mb-3">
-                <div></div> <!-- Placeholder for layout consistency -->
-                <div>
+            <div id="currentListHeader" class="mb-3">
+                <h1 class="text-center text-primary" id="headerListName"></h1>
+                <div class="list-header-actions">
                     <button class="btn btn-sm btn-outline-secondary edit-list-name-btn" title="Edit List Name"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger delete-list-btn" title="Delete List"><i class="fas fa-trash-alt"></i></button>
                 </div>
@@ -230,14 +220,9 @@
             listItem.setAttribute('draggable', 'true');
             listItem.innerHTML = `
                 <span class="list-name">${list.name}</span>
-                <div class="list-actions">
-                    <i class="fas fa-edit edit-list-btn" title="Edit List Name"></i>
-                    <i class="fas fa-trash-alt delete-list-btn-menu" title="Delete List"></i>
-                </div>
             `;
             listItem.addEventListener('click', (e) => {
-                // Prevent switching list when clicking edit/delete icons or dragging
-                if (e.target.closest('.list-actions') || isDragging) {
+                if (isDragging) {
                     e.stopPropagation();
                     return;
                 }
@@ -341,16 +326,6 @@
                 if (e.target.closest('.delete-list-btn') && currentListId !== null) {
                     deleteList(currentListId);
                 }
-                // Edit List from menu
-                if (e.target.closest('.edit-list-btn')) {
-                    const listId = parseInt(e.target.closest('.list-group-item').dataset.listId);
-                    toggleInLineEdit('list', listId);
-                }
-                // Delete List from menu
-                if (e.target.closest('.delete-list-btn-menu')) {
-                    const listId = parseInt(e.target.closest('.list-group-item').dataset.listId);
-                    deleteList(listId);
-                }
                 // Edit Item
                 if (e.target.closest('.edit-item-btn')) {
                     const itemId = parseInt(e.target.closest('.list-item').dataset.itemId);
@@ -381,7 +356,7 @@
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = originalName;
-                input.className = 'form-control';
+                input.className = 'form-control text-center';
                 
                 headerListName.innerHTML = '';
                 headerListName.appendChild(input);
@@ -426,7 +401,7 @@
                     if (newText && newText !== originalText) {
                         editItem(id, newText);
                     }
-                    itemTextSpan.innerHTML = newText;
+                    itemTextSpan.innerHTML = newText || originalText;
                 };
 
                 input.addEventListener('blur', saveEdit);
@@ -467,7 +442,6 @@
                 let touchMoved = false;
 
                 item.addEventListener('touchstart', (e) => {
-                    if (e.target.closest('.list-actions')) return; // Prevent drag on edit/delete icons
                     e.stopPropagation();
                     startY = e.touches[0].clientY;
                     startTime = Date.now();
@@ -477,7 +451,6 @@
                 }, { passive: true });
 
                 item.addEventListener('touchmove', (e) => {
-                    if (e.target.closest('.list-actions')) return;
                     e.preventDefault();
                     touchMoved = true;
                     const currentY = e.touches[0].clientY;
@@ -620,7 +593,7 @@
                     if (afterElement == null) {
                         itemsList.appendChild(draggable);
                     } else {
-                        itemsList.insertBefore(draggable, afterElement);
+                        listsMenu.insertBefore(draggable, afterElement);
                     }
                 }
             });

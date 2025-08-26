@@ -130,7 +130,7 @@
         
         <div id="mainContent" class="list-item-container">
             <div id="currentListHeader" class="d-flex justify-content-between align-items-center mb-3">
-                <h3 id="currentListName" class="list-name"></h3>
+                <div></div> <!-- Placeholder for layout consistency -->
                 <div>
                     <button class="btn btn-sm btn-outline-secondary edit-list-name-btn" title="Edit List Name"><i class="fas fa-edit"></i></button>
                     <button class="btn btn-sm btn-outline-danger delete-list-btn" title="Delete List"><i class="fas fa-trash-alt"></i></button>
@@ -250,7 +250,6 @@
         const newListNameInput = document.getElementById('newListName');
         const addListBtn = document.getElementById('addListBtn');
         const itemsList = document.getElementById('itemsList');
-        const currentListNameHeader = document.getElementById('currentListName');
         const headerListName = document.getElementById('headerListName');
         const addItemInput = document.querySelector('.add-item-input');
         const addItemBtn = document.querySelector('.btn-add-item');
@@ -331,7 +330,6 @@
             currentListId = listId;
             const list = todoData.lists.find(l => l.id === listId);
             if (list) {
-                currentListNameHeader.textContent = list.name;
                 headerListName.textContent = `${list.name} 📝`;
                 renderItems(listId);
             }
@@ -453,14 +451,14 @@
                 const list = todoData.lists.find(l => l.id === id);
                 if (!list) return;
 
-                const originalName = currentListNameHeader.textContent;
+                const originalName = headerListName.textContent.replace(' 📝', '');
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = originalName;
                 input.className = 'form-control';
                 
-                currentListNameHeader.innerHTML = '';
-                currentListNameHeader.appendChild(input);
+                headerListName.innerHTML = '';
+                headerListName.appendChild(input);
                 input.focus();
 
                 const saveEdit = () => {
@@ -468,8 +466,9 @@
                     if (newName && newName !== originalName) {
                         editList(id, newName);
                         headerListName.textContent = `${newName} 📝`;
+                    } else {
+                        headerListName.textContent = `${originalName} 📝`;
                     }
-                    currentListNameHeader.innerHTML = newName;
                 };
 
                 input.addEventListener('blur', saveEdit);
@@ -517,39 +516,19 @@
                 // Desktop Drag & Drop
                 item.addEventListener('dragstart', (e) => {
                     isDragging = true;
-                    draggedElement = e.target.closest('.list-group-item');
-                    e.dataTransfer.setData('text/plain', draggedElement.dataset.listId);
-                    setTimeout(() => draggedElement.classList.add('dragging'), 0);
+                    draggedElement = item;
+                    e.dataTransfer.setData('text/plain', item.dataset.listId);
+                    setTimeout(() => item.classList.add('dragging'), 0);
                 });
 
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
-                        draggedElement = null;
-                        isDragging = false;
                         updateListPositions();
                         saveData();
+                        draggedElement = null;
+                        isDragging = false;
                     }
-                });
-
-                listsMenu.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElement(listsMenu, e.clientY);
-                    const draggable = document.querySelector('.list-group-item.dragging');
-                    if (draggable) {
-                        if (afterElement == null) {
-                            listsMenu.appendChild(draggable);
-                        } else {
-                            listsMenu.insertBefore(draggable, afterElement);
-                        }
-                    }
-                });
-
-                listsMenu.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    if (!draggedElement) return;
-                    updateListPositions();
-                    saveData();
                 });
 
                 // Mobile Touch Drag & Drop
@@ -562,50 +541,66 @@
                     startY = e.touches[0].clientY;
                     startTime = Date.now();
                     touchMoved = false;
-                    draggedElement = e.target.closest('.list-group-item');
+                    draggedElement = item;
                     draggedElement.classList.add('dragging');
+                });
 
-                    const handleTouchMove = (moveEvent) => {
-                        moveEvent.preventDefault();
-                        touchMoved = true;
-                        const currentY = moveEvent.touches[0].clientY;
-                        const deltaY = currentY - startY;
+                item.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    touchMoved = true;
+                    const currentY = e.touches[0].clientY;
+                    const deltaY = currentY - startY;
 
-                        // Move the element visually
-                        draggedElement.style.transform = `translateY(${deltaY}px)`;
+                    // Move the element visually
+                    draggedElement.style.transform = `translateY(${deltaY}px)`;
 
-                        // Find the element to insert after
-                        const afterElement = getDragAfterElement(listsMenu, currentY);
-                        if (draggedElement && draggedElement !== afterElement) {
-                            if (afterElement == null) {
-                                listsMenu.appendChild(draggedElement);
-                            } else {
-                                listsMenu.insertBefore(draggedElement, afterElement);
-                            }
+                    // Find the element to insert after
+                    const afterElement = getDragAfterElement(listsMenu, currentY);
+                    if (draggedElement && draggedElement !== afterElement) {
+                        if (afterElement == null) {
+                            listsMenu.appendChild(draggedElement);
+                        } else {
+                            listsMenu.insertBefore(draggedElement, afterElement);
                         }
-                    };
+                    }
+                }, { passive: false });
 
-                    const handleTouchEnd = () => {
-                        listsMenu.removeEventListener('touchmove', handleTouchMove);
-                        listsMenu.removeEventListener('touchend', handleTouchEnd);
-
-                        if (touchMoved && draggedElement) {
-                            draggedElement.style.transform = '';
-                            draggedElement.classList.remove('dragging');
+                item.addEventListener('touchend', () => {
+                    if (draggedElement) {
+                        draggedElement.style.transform = '';
+                        draggedElement.classList.remove('dragging');
+                        if (touchMoved) {
                             updateListPositions();
                             saveData();
-                        } else if (!touchMoved && Date.now() - startTime < 500) {
+                        } else if (Date.now() - startTime < 500) {
                             // Treat as a tap if no movement and short duration
                             switchToList(parseInt(draggedElement.dataset.listId));
                         }
-                        draggedElement.classList.remove('dragging');
                         draggedElement = null;
                         isDragging = false;
-                    };
-
-                    listsMenu.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    listsMenu.addEventListener('touchend', handleTouchEnd);
+                    }
                 });
+            });
+
+            listsMenu.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(listsMenu, e.clientY);
+                const draggable = document.querySelector('.list-group-item.dragging');
+                if (draggable) {
+                    if (afterElement == null) {
+                        listsMenu.appendChild(draggable);
+                    } else {
+                        listsMenu.insertBefore(draggable, afterElement);
+                    }
+                }
+            });
+
+            listsMenu.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedElement) {
+                    updateListPositions();
+                    saveData();
+                }
             });
         }
 
@@ -616,42 +611,22 @@
                 // Desktop Drag & Drop
                 item.addEventListener('dragstart', (e) => {
                     isDragging = true;
-                    draggedElement = e.target.closest('.list-item');
+                    draggedElement = item;
                     e.dataTransfer.setData('text/plain', JSON.stringify({
-                        itemId: draggedElement.dataset.itemId,
+                        itemId: item.dataset.itemId,
                         sourceListId: currentListId
                     }));
-                    setTimeout(() => draggedElement.classList.add('dragging'), 0);
+                    setTimeout(() => item.classList.add('dragging'), 0);
                 });
 
                 item.addEventListener('dragend', () => {
                     if (draggedElement) {
                         draggedElement.classList.remove('dragging');
-                        draggedElement = null;
-                        isDragging = false;
                         updateItemPositions();
                         saveData();
+                        draggedElement = null;
+                        isDragging = false;
                     }
-                });
-
-                itemsList.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElement(itemsList, e.clientY);
-                    const draggable = document.querySelector('.list-item.dragging');
-                    if (draggable) {
-                        if (afterElement == null) {
-                            itemsList.appendChild(draggable);
-                        } else {
-                            itemsList.insertBefore(draggable, afterElement);
-                        }
-                    }
-                });
-
-                listsMenu.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    if (!draggedElement) return;
-                    updateItemPositions();
-                    saveData();
                 });
 
                 // Mobile Touch Drag & Drop
@@ -664,47 +639,63 @@
                     startY = e.touches[0].clientY;
                     startTime = Date.now();
                     touchMoved = false;
-                    draggedElement = e.target.closest('.list-item');
+                    draggedElement = item;
                     draggedElement.classList.add('dragging');
+                });
 
-                    const handleTouchMove = (moveEvent) => {
-                        moveEvent.preventDefault();
-                        touchMoved = true;
-                        const currentY = moveEvent.touches[0].clientY;
-                        const deltaY = currentY - startY;
+                item.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    touchMoved = true;
+                    const currentY = e.touches[0].clientY;
+                    const deltaY = currentY - startY;
 
-                        // Move the element visually
-                        draggedElement.style.transform = `translateY(${deltaY}px)`;
+                    // Move the element visually
+                    draggedElement.style.transform = `translateY(${deltaY}px)`;
 
-                        // Find the element to insert after
-                        const afterElement = getDragAfterElement(itemsList, currentY);
-                        if (draggedElement && draggedElement !== afterElement) {
-                            if (afterElement == null) {
-                                itemsList.appendChild(draggedElement);
-                            } else {
-                                itemsList.insertBefore(draggedElement, afterElement);
-                            }
+                    // Find the element to insert after
+                    const afterElement = getDragAfterElement(itemsList, currentY);
+                    if (draggedElement && draggedElement !== afterElement) {
+                        if (afterElement == null) {
+                            itemsList.appendChild(draggedElement);
+                        } else {
+                            itemsList.insertBefore(draggedElement, afterElement);
                         }
-                    };
+                    }
+                }, { passive: false });
 
-                    const handleTouchEnd = () => {
-                        itemsList.removeEventListener('touchmove', handleTouchMove);
-                        itemsList.removeEventListener('touchend', handleTouchEnd);
-
-                        if (touchMoved && draggedElement) {
-                            draggedElement.style.transform = '';
-                            draggedElement.classList.remove('dragging');
+                item.addEventListener('touchend', () => {
+                    if (draggedElement) {
+                        draggedElement.style.transform = '';
+                        draggedElement.classList.remove('dragging');
+                        if (touchMoved) {
                             updateItemPositions();
                             saveData();
                         }
-                        draggedElement.classList.remove('dragging');
                         draggedElement = null;
                         isDragging = false;
-                    };
-
-                    itemsList.addEventListener('touchmove', handleTouchMove, { passive: false });
-                    itemsList.addEventListener('touchend', handleTouchEnd);
+                    }
                 });
+            });
+
+            itemsList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(itemsList, e.clientY);
+                const draggable = document.querySelector('.list-item.dragging');
+                if (draggable) {
+                    if (afterElement == null) {
+                        itemsList.appendChild(draggable);
+                    } else {
+                        itemsList.insertBefore(draggable, afterElement);
+                    }
+                }
+            });
+
+            itemsList.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (draggedElement) {
+                    updateItemPositions();
+                    saveData();
+                }
             });
         }
         
@@ -746,7 +737,6 @@
                     if (todoData.lists.length > 0) {
                         switchToList(todoData.lists[0].id);
                     } else {
-                        currentListNameHeader.textContent = '';
                         headerListName.textContent = '';
                         itemsList.innerHTML = '';
                     }
@@ -799,7 +789,6 @@
                     listToUpdate.position = index + 1;
                 }
             });
-            renumberLists();
             sortData();
             renderListsMenu();
             saveData();

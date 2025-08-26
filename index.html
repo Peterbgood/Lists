@@ -522,23 +522,24 @@
                 });
 
                 // Mobile Touch Drag & Drop
+                let longPressTimer;
                 item.addEventListener('touchstart', (e) => {
                     const startTouchY = e.touches[0].clientY;
-                    draggedElement = e.target.closest('.list-group-item');
-                    let startOffsetTop = draggedElement.offsetTop;
+                    const itemElement = e.currentTarget;
                     isDragging = false;
                     
-                    dragTimer = setTimeout(() => {
+                    longPressTimer = setTimeout(() => {
                         isDragging = true;
+                        draggedElement = itemElement;
                         draggedElement.classList.add('dragging');
                         draggedElement.style.position = 'absolute';
                         draggedElement.style.width = draggedElement.offsetWidth + 'px';
+                        draggedElement.style.top = `${draggedElement.offsetTop}px`;
                     }, 500); // 500ms for a long press
 
                     const handleTouchMove = (moveEvent) => {
                         if (!isDragging) {
-                            // If a quick movement occurs, cancel the drag
-                            clearTimeout(dragTimer);
+                            clearTimeout(longPressTimer);
                             return;
                         }
                         
@@ -546,21 +547,23 @@
                         const moveTouchY = moveEvent.touches[0].clientY;
                         const dy = moveTouchY - startTouchY;
                         
-                        draggedElement.style.top = `${startOffsetTop + dy}px`;
+                        draggedElement.style.top = `${startTouchY + dy}px`;
 
                         const afterElement = getDragAfterElement(listsMenu, moveTouchY);
-                        const draggable = document.querySelector('.list-group-item.dragging');
-                        if (draggable && draggable !== afterElement) {
+                        if (draggedElement && draggedElement !== afterElement) {
                             if (afterElement == null) {
-                                listsMenu.appendChild(draggable);
+                                listsMenu.appendChild(draggedElement);
                             } else {
-                                listsMenu.insertBefore(draggable, afterElement);
+                                listsMenu.insertBefore(draggedElement, afterElement);
                             }
                         }
                     };
 
                     const handleTouchEnd = () => {
-                        clearTimeout(dragTimer);
+                        clearTimeout(longPressTimer);
+                        listsMenu.removeEventListener('touchmove', handleTouchMove);
+                        listsMenu.removeEventListener('touchend', handleTouchEnd);
+                        
                         if (isDragging) {
                             draggedElement.style.position = '';
                             draggedElement.style.width = '';
@@ -571,8 +574,6 @@
                         }
                         draggedElement = null;
                         isDragging = false;
-                        listsMenu.removeEventListener('touchmove', handleTouchMove);
-                        listsMenu.removeEventListener('touchend', handleTouchEnd);
                     };
                     
                     listsMenu.addEventListener('touchmove', handleTouchMove, {passive: false});
@@ -624,22 +625,24 @@
                 });
 
                 // Mobile Touch Drag & Drop
+                let longPressTimer;
                 item.addEventListener('touchstart', (e) => {
                     const startTouchY = e.touches[0].clientY;
-                    draggedElement = e.target.closest('.list-item');
-                    let startOffsetTop = draggedElement.offsetTop;
+                    const itemElement = e.currentTarget;
                     isDragging = false;
                     
-                    dragTimer = setTimeout(() => {
+                    longPressTimer = setTimeout(() => {
                         isDragging = true;
+                        draggedElement = itemElement;
                         draggedElement.classList.add('dragging');
                         draggedElement.style.position = 'absolute';
                         draggedElement.style.width = draggedElement.offsetWidth + 'px';
+                        draggedElement.style.top = `${draggedElement.offsetTop}px`;
                     }, 500); // 500ms for a long press
 
                     const handleTouchMove = (moveEvent) => {
                         if (!isDragging) {
-                            clearTimeout(dragTimer);
+                            clearTimeout(longPressTimer);
                             return;
                         }
 
@@ -647,21 +650,23 @@
                         const moveTouchY = moveEvent.touches[0].clientY;
                         const dy = moveTouchY - startTouchY;
 
-                        draggedElement.style.top = `${startOffsetTop + dy}px`;
+                        draggedElement.style.top = `${startTouchY + dy}px`;
 
                         const afterElement = getDragAfterElement(itemsList, moveTouchY);
-                        const draggable = document.querySelector('.list-item.dragging');
-                        if (draggable && draggable !== afterElement) {
+                        if (draggedElement && draggedElement !== afterElement) {
                             if (afterElement == null) {
-                                itemsList.appendChild(draggable);
+                                itemsList.appendChild(draggedElement);
                             } else {
-                                itemsList.insertBefore(draggable, afterElement);
+                                itemsList.insertBefore(draggedElement, afterElement);
                             }
                         }
                     };
 
                     const handleTouchEnd = () => {
-                        clearTimeout(dragTimer);
+                        clearTimeout(longPressTimer);
+                        itemsList.removeEventListener('touchmove', handleTouchMove);
+                        itemsList.removeEventListener('touchend', handleTouchEnd);
+
                         if (isDragging) {
                             draggedElement.style.position = '';
                             draggedElement.style.width = '';
@@ -672,8 +677,6 @@
                         }
                         draggedElement = null;
                         isDragging = false;
-                        itemsList.removeEventListener('touchmove', handleTouchMove);
-                        itemsList.removeEventListener('touchend', handleTouchEnd);
                     };
 
                     itemsList.addEventListener('touchmove', handleTouchMove, {passive: false});

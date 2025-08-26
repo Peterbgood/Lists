@@ -303,6 +303,7 @@
             listItem.setAttribute('data-list-id', list.id);
             listItem.setAttribute('draggable', 'true');
             listItem.innerHTML = `
+                <i class="fas fa-grip-vertical me-2"></i>
                 <span class="list-name">${list.name}</span>
                 <div class="btn-group">
                     <button class="btn btn-sm btn-outline-secondary edit-list-btn d-none" title="Edit List Name"><i class="fas fa-edit"></i></button>
@@ -355,6 +356,7 @@
             listItem.setAttribute('data-item-id', item.id);
             listItem.setAttribute('draggable', 'true');
             listItem.innerHTML = `
+                <i class="fas fa-grip-vertical me-2"></i>
                 <span class="item-text">${item.text}</span>
                 <div class="item-actions">
                     <button class="btn btn-sm btn-info edit-item-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>

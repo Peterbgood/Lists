@@ -236,7 +236,7 @@
             currentListId = listId;
             const list = todoData.lists.find(l => l.id === listId);
             if (list) {
-                headerListName.textContent = `${list.name} 📝`;
+                headerListName.textContent = `${list.name}`;
                 renderItems(listId);
             }
             // Close the offcanvas menu on mobile

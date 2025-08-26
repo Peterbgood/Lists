@@ -13,12 +13,15 @@
         .offcanvas-body {
             padding: 0;
         }
-        .list-group-item {
+        .list-group-item, .list-item {
             cursor: move;
         }
-        .list-group-item.dragging {
+        .list-group-item.dragging, .list-item.dragging {
             background-color: #e9ecef;
             opacity: 0.7;
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
         }
         .offcanvas-title {
             cursor: pointer;
@@ -32,12 +35,6 @@
             border-radius: .25rem;
             padding: 0.25rem 0.5rem;
             width: 75%;
-        }
-        .offcanvas-title .btn-group {
-            display: none;
-        }
-        .offcanvas-title:hover .btn-group, .offcanvas-title.active .btn-group {
-            display: flex;
         }
         .list-group-item input {
             border: none;
@@ -61,7 +58,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #e9ecef;
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 5px;
             padding: 10px;
             margin-bottom: 8px;
@@ -89,6 +87,10 @@
             background-color: #fff;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 20px;
+        }
+        /* New CSS for better alignment */
+        #itemsList {
+            padding-left: 0;
         }
     </style>
 </head>
@@ -479,16 +481,17 @@
         function addListDragListeners() {
             const listItems = listsMenu.querySelectorAll('.list-group-item');
             listItems.forEach(item => {
+                // Desktop Drag & Drop
                 item.addEventListener('dragstart', (e) => {
                     draggedElement = e.target.closest('.list-group-item');
                     e.dataTransfer.setData('text/plain', draggedElement.dataset.listId);
                     setTimeout(() => draggedElement.classList.add('dragging'), 0);
                 });
 
-                item.addEventListener('dragenter', (e) => {
-                    e.preventDefault();
-                    if (draggedElement && draggedElement !== e.target.closest('.list-group-item')) {
-                        e.target.closest('.list-group-item').classList.add('over');
+                item.addEventListener('dragend', () => {
+                    if (draggedElement) {
+                        draggedElement.classList.remove('dragging');
+                        draggedElement = null;
                     }
                 });
 
@@ -505,25 +508,59 @@
                     }
                 });
 
-                item.addEventListener('dragleave', (e) => {
-                    e.target.closest('.list-group-item').classList.remove('over');
-                });
-                
                 item.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    const targetListElement = e.target.closest('.list-group-item');
-                    targetListElement.classList.remove('over');
-                    const draggedListId = parseInt(draggedElement.dataset.listId);
-                    const reorderedListElements = Array.from(listsMenu.querySelectorAll('.list-group-item'));
-                    const reorderedLists = reorderedListElements.map((el, index) => {
-                        return {
-                            id: parseInt(el.dataset.listId),
-                            position: index + 1
-                        };
-                    });
-                    
-                    updateListPositions(reorderedLists);
+                    updateListPositions();
                     saveData();
+                });
+
+                // Mobile Touch Drag & Drop
+                item.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent scrolling
+                    draggedElement = e.target.closest('.list-group-item');
+                    draggedElement.classList.add('dragging');
+                    listsMenu.style.position = 'relative'; // Ensure list items can be positioned
+                    draggedElement.style.position = 'absolute';
+                    draggedElement.style.width = draggedElement.offsetWidth + 'px';
+                    
+                    const touch = e.touches[0];
+                    const startY = touch.clientY;
+                    const startOffsetTop = draggedElement.offsetTop;
+                    
+                    const handleTouchMove = (moveEvent) => {
+                        const moveTouch = moveEvent.touches[0];
+                        const newY = moveTouch.clientY;
+                        const dy = newY - startY;
+                        
+                        draggedElement.style.top = `${startOffsetTop + dy}px`;
+
+                        // Reorder logic for touch
+                        const siblings = [...listsMenu.querySelectorAll('.list-group-item:not(.dragging)')];
+                        const afterElement = getDragAfterElement(listsMenu, newY, siblings);
+                        if (afterElement) {
+                            listsMenu.insertBefore(draggedElement, afterElement);
+                        } else {
+                            listsMenu.appendChild(draggedElement);
+                        }
+                    };
+
+                    const handleTouchEnd = () => {
+                        listsMenu.removeEventListener('touchmove', handleTouchMove);
+                        listsMenu.removeEventListener('touchend', handleTouchEnd);
+                        
+                        // Reset styles
+                        draggedElement.style.position = '';
+                        draggedElement.style.width = '';
+                        draggedElement.style.top = '';
+                        draggedElement.classList.remove('dragging');
+                        
+                        updateListPositions();
+                        saveData();
+                        draggedElement = null;
+                    };
+                    
+                    listsMenu.addEventListener('touchmove', handleTouchMove);
+                    listsMenu.addEventListener('touchend', handleTouchEnd);
                 });
             });
         }
@@ -531,6 +568,7 @@
         function addItemDragListeners() {
             const listItems = itemsList.querySelectorAll('.list-item');
             listItems.forEach(item => {
+                // Desktop Drag & Drop
                 item.addEventListener('dragstart', (e) => {
                     draggedElement = e.target.closest('.list-item');
                     e.dataTransfer.setData('text/plain', JSON.stringify({
@@ -541,44 +579,84 @@
                 });
 
                 item.addEventListener('dragend', () => {
-                    draggedElement.classList.remove('dragging');
-                    draggedElement = null;
-                });
-            });
-            
-            itemsList.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(itemsList, e.clientY);
-                const draggable = document.querySelector('.list-item.dragging');
-                if (draggable) {
-                    if (afterElement == null) {
-                        itemsList.appendChild(draggable);
-                    } else {
-                        itemsList.insertBefore(draggable, afterElement);
+                    if (draggedElement) {
+                        draggedElement.classList.remove('dragging');
+                        draggedElement = null;
                     }
-                }
-            });
-
-            itemsList.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const draggedItem = draggedElement;
-                if (!draggedItem) return;
-                
-                const reorderedItems = Array.from(itemsList.querySelectorAll('.list-item')).map((el, index) => {
-                    return {
-                        id: parseInt(el.dataset.itemId),
-                        position: index + 1,
-                        list_id: currentListId
-                    };
                 });
-                
-                updateItemPositions(reorderedItems);
-                saveData();
+
+                itemsList.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(itemsList, e.clientY);
+                    const draggable = document.querySelector('.list-item.dragging');
+                    if (draggable) {
+                        if (afterElement == null) {
+                            itemsList.appendChild(draggable);
+                        } else {
+                            itemsList.insertBefore(draggable, afterElement);
+                        }
+                    }
+                });
+
+                itemsList.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    if (!draggedElement) return;
+                    updateItemPositions();
+                    saveData();
+                });
+
+                // Mobile Touch Drag & Drop
+                item.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent scrolling
+                    draggedElement = e.target.closest('.list-item');
+                    draggedElement.classList.add('dragging');
+                    itemsList.style.position = 'relative'; // Ensure list items can be positioned
+                    draggedElement.style.position = 'absolute';
+                    draggedElement.style.width = draggedElement.offsetWidth + 'px';
+
+                    const touch = e.touches[0];
+                    const startY = touch.clientY;
+                    const startOffsetTop = draggedElement.offsetTop;
+
+                    const handleTouchMove = (moveEvent) => {
+                        const moveTouch = moveEvent.touches[0];
+                        const newY = moveTouch.clientY;
+                        const dy = newY - startY;
+
+                        draggedElement.style.top = `${startOffsetTop + dy}px`;
+
+                        const siblings = [...itemsList.querySelectorAll('.list-item:not(.dragging)')];
+                        const afterElement = getDragAfterElement(itemsList, newY, siblings);
+                        if (afterElement) {
+                            itemsList.insertBefore(draggedElement, afterElement);
+                        } else {
+                            itemsList.appendChild(draggedElement);
+                        }
+                    };
+
+                    const handleTouchEnd = () => {
+                        itemsList.removeEventListener('touchmove', handleTouchMove);
+                        itemsList.removeEventListener('touchend', handleTouchEnd);
+                        
+                        // Reset styles
+                        draggedElement.style.position = '';
+                        draggedElement.style.width = '';
+                        draggedElement.style.top = '';
+                        draggedElement.classList.remove('dragging');
+                        
+                        updateItemPositions();
+                        saveData();
+                        draggedElement = null;
+                    };
+
+                    itemsList.addEventListener('touchmove', handleTouchMove);
+                    itemsList.addEventListener('touchend', handleTouchEnd);
+                });
             });
         }
         
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.list-group-item:not(.dragging), .list-item:not(.dragging)')];
+        function getDragAfterElement(container, y, elements = null) {
+            const draggableElements = elements || [...container.querySelectorAll('.list-group-item:not(.dragging), .list-item:not(.dragging)')];
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
@@ -656,8 +734,15 @@
         }
 
         // Update positions of lists after a drag and drop action
-        function updateListPositions(items) {
-            items.forEach(updatedList => {
+        function updateListPositions() {
+            const reorderedListElements = Array.from(listsMenu.querySelectorAll('.list-group-item'));
+            const reorderedLists = reorderedListElements.map((el, index) => {
+                return {
+                    id: parseInt(el.dataset.listId),
+                    position: index + 1
+                };
+            });
+            reorderedLists.forEach(updatedList => {
                 const listToUpdate = todoData.lists.find(list => list.id === updatedList.id);
                 if (listToUpdate) {
                     listToUpdate.position = updatedList.position;
@@ -667,8 +752,16 @@
         }
 
         // Update positions of items after a drag and drop action
-        function updateItemPositions(items) {
-            items.forEach(updatedItem => {
+        function updateItemPositions() {
+            const reorderedItemElements = Array.from(itemsList.querySelectorAll('.list-item'));
+            const reorderedItems = reorderedItemElements.map((el, index) => {
+                return {
+                    id: parseInt(el.dataset.itemId),
+                    position: index + 1,
+                    list_id: currentListId
+                };
+            });
+            reorderedItems.forEach(updatedItem => {
                 const itemToUpdate = todoData.items.find(item => item.id === updatedItem.id);
                 if (itemToUpdate) {
                     itemToUpdate.position = updatedItem.position;

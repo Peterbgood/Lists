@@ -92,6 +92,10 @@
         #itemsList {
             padding-left: 0;
         }
+        .import-export-buttons {
+            padding: 1rem;
+            border-top: 1px solid #e9ecef;
+        }
     </style>
 </head>
 <body>
@@ -108,23 +112,22 @@
             </div>
             <ul class="list-group list-group-flush" id="listsMenu">
             </ul>
+            <div class="import-export-buttons d-flex justify-content-center gap-2">
+                <button class="btn btn-secondary" id="exportBtn"><i class="fas fa-download me-1"></i>Export Data</button>
+                <button class="btn btn-secondary" id="importBtn"><i class="fas fa-upload me-1"></i>Import Data</button>
+                <input type="file" id="importFile" class="d-none" accept="application/json">
+            </div>
         </div>
     </div>
 
     <div class="container py-4">
         <header class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="text-center mb-0 text-primary flex-grow-1">To-Do Lists 📝</h1>
+            <h1 class="text-center mb-0 text-primary flex-grow-1" id="headerListName"></h1>
             <button class="btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasLists" aria-controls="offcanvasLists">
                 <i class="fas fa-bars"></i> Lists
             </button>
         </header>
         
-        <div class="import-export-buttons d-flex justify-content-center gap-2 mb-4">
-            <button class="btn btn-secondary" id="exportBtn"><i class="fas fa-download me-1"></i>Export Data</button>
-            <button class="btn btn-secondary" id="importBtn"><i class="fas fa-upload me-1"></i>Import Data</button>
-            <input type="file" id="importFile" class="d-none" accept="application/json">
-        </div>
-
         <div id="mainContent" class="list-item-container">
             <div id="currentListHeader" class="d-flex justify-content-between align-items-center mb-3">
                 <h3 id="currentListName" class="list-name"></h3>
@@ -248,6 +251,7 @@
         const addListBtn = document.getElementById('addListBtn');
         const itemsList = document.getElementById('itemsList');
         const currentListNameHeader = document.getElementById('currentListName');
+        const headerListName = document.getElementById('headerListName');
         const addItemInput = document.querySelector('.add-item-input');
         const addItemBtn = document.querySelector('.btn-add-item');
         const exportBtn = document.getElementById('exportBtn');
@@ -328,6 +332,7 @@
             const list = todoData.lists.find(l => l.id === listId);
             if (list) {
                 currentListNameHeader.textContent = list.name;
+                headerListName.textContent = `${list.name} 📝`;
                 renderItems(listId);
             }
             // Close the offcanvas menu on mobile
@@ -376,12 +381,34 @@
                 }
             });
 
+            // Add new list on Enter key
+            newListNameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const name = newListNameInput.value.trim();
+                    if (name) {
+                        addList(name);
+                        newListNameInput.value = '';
+                    }
+                }
+            });
+
             // Add new item
             addItemBtn.addEventListener('click', () => {
                 const text = addItemInput.value.trim();
                 if (text && currentListId !== null) {
                     addItem(currentListId, text);
                     addItemInput.value = '';
+                }
+            });
+
+            // Add new item on Enter key
+            addItemInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const text = addItemInput.value.trim();
+                    if (text && currentListId !== null) {
+                        addItem(currentListId, text);
+                        addItemInput.value = '';
+                    }
                 }
             });
 
@@ -440,6 +467,7 @@
                     const newName = input.value.trim();
                     if (newName && newName !== originalName) {
                         editList(id, newName);
+                        headerListName.textContent = `${newName} 📝`;
                     }
                     currentListNameHeader.innerHTML = newName;
                 };
@@ -499,6 +527,8 @@
                         draggedElement.classList.remove('dragging');
                         draggedElement = null;
                         isDragging = false;
+                        updateListPositions();
+                        saveData();
                     }
                 });
 
@@ -599,6 +629,8 @@
                         draggedElement.classList.remove('dragging');
                         draggedElement = null;
                         isDragging = false;
+                        updateItemPositions();
+                        saveData();
                     }
                 });
 
@@ -615,7 +647,7 @@
                     }
                 });
 
-                itemsList.addEventListener('drop', (e) => {
+                listsMenu.addEventListener('drop', (e) => {
                     e.preventDefault();
                     if (!draggedElement) return;
                     updateItemPositions();
@@ -692,8 +724,10 @@
         // CRUD Functions
         function addList(name) {
             const newId = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.id)) + 1 : 1;
-            const newPosition = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.position)) + 1 : 1;
-            todoData.lists.push({ id: newId, name, position: newPosition });
+            // Shift existing lists' positions up
+            todoData.lists.forEach(list => list.position += 1);
+            // Add new list at position 1
+            todoData.lists.push({ id: newId, name, position: 1 });
             sortData();
             renderListsMenu();
             saveData();
@@ -713,6 +747,7 @@
                         switchToList(todoData.lists[0].id);
                     } else {
                         currentListNameHeader.textContent = '';
+                        headerListName.textContent = '';
                         itemsList.innerHTML = '';
                     }
                 }
@@ -757,38 +792,33 @@
         // Update positions of lists after a drag and drop action
         function updateListPositions() {
             const reorderedListElements = Array.from(listsMenu.querySelectorAll('.list-group-item'));
-            const reorderedLists = reorderedListElements.map((el, index) => {
-                return {
-                    id: parseInt(el.dataset.listId),
-                    position: index + 1
-                };
-            });
-            reorderedLists.forEach(updatedList => {
-                const listToUpdate = todoData.lists.find(list => list.id === updatedList.id);
+            reorderedListElements.forEach((el, index) => {
+                const listId = parseInt(el.dataset.listId);
+                const listToUpdate = todoData.lists.find(list => list.id === listId);
                 if (listToUpdate) {
-                    listToUpdate.position = updatedList.position;
+                    listToUpdate.position = index + 1;
                 }
             });
             renumberLists();
+            sortData();
+            renderListsMenu();
+            saveData();
         }
 
         // Update positions of items after a drag and drop action
         function updateItemPositions() {
             const reorderedItemElements = Array.from(itemsList.querySelectorAll('.list-item'));
-            const reorderedItems = reorderedItemElements.map((el, index) => {
-                return {
-                    id: parseInt(el.dataset.itemId),
-                    position: index + 1,
-                    list_id: currentListId
-                };
-            });
-            reorderedItems.forEach(updatedItem => {
-                const itemToUpdate = todoData.items.find(item => item.id === updatedItem.id);
+            reorderedItemElements.forEach((el, index) => {
+                const itemId = parseInt(el.dataset.itemId);
+                const itemToUpdate = todoData.items.find(item => item.id === itemId);
                 if (itemToUpdate) {
-                    itemToUpdate.position = updatedItem.position;
+                    itemToUpdate.position = index + 1;
                 }
             });
             renumberItems();
+            sortData();
+            renderItems(currentListId);
+            saveData();
         }
 
         // Re-number positions of lists after a change

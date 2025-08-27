@@ -12,23 +12,26 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
-      /* --- General and Existing Styles (mostly unchanged) --- */
       body {
         background-color: #f8f9fa;
+        font-family: 'Poppins', sans-serif;
       }
       .offcanvas-body {
         padding: 0;
       }
       .list-group-item,
-      .list-item {
-        cursor: move;
+      .list-item,
+      .title-container {
+        cursor: pointer;
         touch-action: none;
       }
-
-      /* --- UPDATED: Styles for SortableJS dragging effects --- */
       .sortable-ghost {
-        background-color: #e9ecef !important; /* Use !important to override Bootstrap */
+        background-color: #e9ecef !important;
         opacity: 0.7;
       }
       .sortable-drag {
@@ -37,8 +40,6 @@
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         z-index: 1000;
       }
-
-      /* --- Other existing styles --- */
       .offcanvas-title {
         cursor: pointer;
         padding: 1rem;
@@ -55,7 +56,7 @@
       .list-group-item input {
         border: none;
         background: transparent;
-        font-weight: bold;
+        font-weight: 500;
         font-size: 1.25rem;
         width: 100%;
       }
@@ -68,7 +69,8 @@
         margin-top: 10px;
       }
       .item-text,
-      .list-name {
+      .list-name,
+      .title-text {
         flex-grow: 1;
       }
       .list-item {
@@ -82,18 +84,33 @@
         margin-bottom: 8px;
         transition: background-color 0.2s ease-in-out;
       }
-      .list-item:hover {
+      .title-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #f8f9fa;
+        border: none; /* Removed border */
+        border-radius: 5px;
+        padding: 10px;
+        margin-bottom: 8px;
+        transition: background-color 0.2s ease-in-out;
+      }
+      .list-item:hover,
+      .title-container:hover {
         background-color: #dee2e6;
       }
-      .list-item .item-actions {
+      .list-item .item-actions,
+      .title-container .title-actions {
         display: flex;
         gap: 5px;
         visibility: hidden;
       }
-      .list-item:hover .item-actions {
+      .list-item:hover .item-actions,
+      .title-container:hover .title-actions {
         visibility: visible;
       }
-      .item-actions .btn {
+      .item-actions .btn,
+      .title-actions .btn {
         padding: 0.3rem 0.6rem;
         font-size: 0.8rem;
       }
@@ -114,15 +131,18 @@
       #currentListHeader {
         display: flex;
         flex-direction: column;
-        align-items: center;
-        margin-bottom: 1rem;
-      }
-      #headerListName {
+        align-items: flex-start;
         margin-bottom: 0.5rem;
       }
-      .list-header-actions {
+      .title-text {
+        font-size: 1.5rem; /* Smaller font size for title */
+        margin-bottom: 0;
+      }
+      header {
         display: flex;
-        gap: 5px;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
       }
     </style>
   </head>
@@ -172,7 +192,8 @@
       </div>
     </div>
     <div class="container py-4">
-      <header class="d-flex justify-content-end align-items-center mb-4">
+      <header class="d-flex justify-content-between align-items-start mb-4">
+        <div id="currentListHeader"></div>
         <button
           class="btn btn-outline-primary"
           type="button"
@@ -184,23 +205,6 @@
         </button>
       </header>
       <div id="mainContent" class="list-item-container">
-        <div id="currentListHeader" class="mb-3">
-          <h1 class="text-center text-primary" id="headerListName"></h1>
-          <div class="list-header-actions">
-            <button
-              class="btn btn-sm btn-outline-secondary edit-list-name-btn"
-              title="Edit List Name"
-            >
-              <i class="fas fa-edit"></i>
-            </button>
-            <button
-              class="btn btn-sm btn-outline-danger delete-list-btn"
-              title="Delete List"
-            >
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </div>
-        </div>
         <ul class="list-items" id="itemsList"></ul>
         <div class="add-item-form mt-auto">
           <input
@@ -221,23 +225,17 @@
       let todoData = { lists: [], items: [] };
       let currentListId = null;
 
-      // --- DOM Element References (Unchanged) ---
       const listsMenu = document.getElementById("listsMenu");
       const newListNameInput = document.getElementById("newListName");
       const addListBtn = document.getElementById("addListBtn");
       const itemsList = document.getElementById("itemsList");
-      const headerListName = document.getElementById("headerListName");
+      const currentListHeader = document.getElementById("currentListHeader");
       const addItemInput = document.querySelector(".add-item-input");
       const addItemBtn = document.querySelector(".btn-add-item");
       const exportBtn = document.getElementById("exportBtn");
       const importBtn = document.getElementById("importBtn");
       const importFile = document.getElementById("importFile");
-      const deleteListBtn = document.querySelector(".delete-list-btn");
-      const editListNameBtn = document.querySelector(".edit-list-name-btn");
 
-      // REMOVED: draggedElement and isDragging variables
-
-      // --- Data and Rendering Functions (Mostly Unchanged) ---
       function saveData() {
         localStorage.setItem("todoData", JSON.stringify(todoData));
       }
@@ -263,7 +261,6 @@
           const listHtml = createListMenuItem(list);
           listsMenu.appendChild(listHtml);
         });
-        // REMOVED: addListDragListeners() call
       }
 
       function createListMenuItem(list) {
@@ -271,7 +268,6 @@
         listItem.className =
           "list-group-item d-flex justify-content-between align-items-center";
         listItem.setAttribute("data-list-id", list.id);
-        // REMOVED: draggable="true" attribute
         listItem.innerHTML = `<span class="list-name">${list.name}</span>`;
         listItem.addEventListener("click", () => switchToList(list.id));
         return listItem;
@@ -281,7 +277,14 @@
         currentListId = listId;
         const list = todoData.lists.find((l) => l.id === listId);
         if (list) {
-          headerListName.textContent = list.name;
+          currentListHeader.innerHTML = `
+            <div class="title-container" data-list-id="${list.id}">
+              <h1 class="title-text text-primary">${list.name}</h1>
+              <div class="title-actions">
+                <button class="btn btn-sm btn-info edit-title-btn" title="Edit Title"><i class="fas fa-pencil-alt"></i></button>
+                <button class="btn btn-sm btn-danger delete-title-btn" title="Delete List"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>`;
           renderItems(listId);
         }
         const offcanvas = bootstrap.Offcanvas.getInstance(
@@ -299,26 +302,22 @@
           const itemHtml = createItemHtml(item);
           itemsList.appendChild(itemHtml);
         });
-        // REMOVED: addItemDragListeners() call
       }
 
       function createItemHtml(item) {
         const listItem = document.createElement("li");
         listItem.className = "list-item";
         listItem.setAttribute("data-item-id", item.id);
-        // REMOVED: draggable="true" attribute
         listItem.innerHTML = `
-                <i class="fas fa-grip-vertical me-2"></i>
-                <span class="item-text">${item.text}</span>
-                <div class="item-actions">
-                    <button class="btn btn-sm btn-info edit-item-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
-                    <button class="btn btn-sm btn-danger delete-item-btn" title="Delete Item"><i class="fas fa-trash"></i></button>
-                </div>`;
+          <i class="fas fa-grip-vertical me-2"></i>
+          <span class="item-text">${item.text}</span>
+          <div class="item-actions">
+            <button class="btn btn-sm btn-info edit-item-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
+            <button class="btn btn-sm btn-danger delete-item-btn" title="Delete Item"><i class="fas fa-trash"></i></button>
+          </div>`;
         return listItem;
       }
 
-      // --- Event Listeners and CRUD (Mostly Unchanged) ---
-      // (The 'addEventListeners' and all the CRUD functions like addList, deleteItem, etc., remain the same)
       function addEventListeners() {
         addListBtn.addEventListener("click", () => {
           const name = newListNameInput.value.trim();
@@ -353,13 +352,10 @@
           }
         });
         document.addEventListener("click", (e) => {
-          if (
-            e.target.closest(".edit-list-name-btn") &&
-            currentListId !== null
-          ) {
+          if (e.target.closest(".edit-title-btn") && currentListId !== null) {
             toggleInLineEdit("list", currentListId);
           }
-          if (e.target.closest(".delete-list-btn") && currentListId !== null) {
+          if (e.target.closest(".delete-title-btn") && currentListId !== null) {
             deleteList(currentListId);
           }
           if (e.target.closest(".edit-item-btn")) {
@@ -380,10 +376,6 @@
         importFile.addEventListener("change", importData);
       }
 
-      // --- REMOVED: All manual drag/drop functions ---
-      // `addListDragListeners`, `addItemDragListeners`, `getDragAfterElement` have been removed.
-
-      // --- Data Update Functions (Unchanged, but now called by SortableJS) ---
       function updateListPositions() {
         const reorderedListElements = Array.from(
           listsMenu.querySelectorAll(".list-group-item")
@@ -396,7 +388,6 @@
           if (listToUpdate) listToUpdate.position = index + 1;
         });
         sortData();
-        // No need to re-render here, as SortableJS already updated the DOM.
         saveData();
       }
 
@@ -415,21 +406,15 @@
         saveData();
       }
 
-      // --- ADDED: Initialize SortableJS ---
       function initializeSortable() {
-        // Initialize for the Lists menu
         new Sortable(listsMenu, {
-          animation: 150, // ms, animation speed moving items when sorting, `0` — without animation
-          ghostClass: "sortable-ghost", // Class name for the drop placeholder
-          dragClass: "sortable-drag", // Class name for the dragging item
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragClass: "sortable-drag",
           onEnd: function () {
-            // This event fires when the user drops the item.
-            // We update our data model's positions based on the new DOM order.
             updateListPositions();
           },
         });
-
-        // Initialize for the Items list
         new Sortable(itemsList, {
           animation: 150,
           ghostClass: "sortable-ghost",
@@ -440,26 +425,28 @@
         });
       }
 
-      // --- Your other functions like toggleInLineEdit, CRUD, Import/Export remain the same ---
-      // (No changes needed for the rest of your JS functions)
       function toggleInLineEdit(type, id) {
         if (type === "list") {
           const list = todoData.lists.find((l) => l.id === id);
           if (!list) return;
-          const originalName = headerListName.textContent.replace(" 📝", "");
+          const titleContainer = document.querySelector(
+            `.title-container[data-list-id="${id}"]`
+          );
+          const titleText = titleContainer.querySelector(".title-text");
+          const originalName = titleText.textContent.replace(" 📝", "");
           const input = document.createElement("input");
           input.type = "text";
           input.value = originalName;
-          input.className = "form-control text-center";
-          headerListName.innerHTML = "";
-          headerListName.appendChild(input);
+          input.className = "form-control";
+          titleText.innerHTML = "";
+          titleText.appendChild(input);
           input.focus();
           const saveEdit = () => {
             const newName = input.value.trim();
             if (newName && newName !== originalName) {
               editList(id, newName);
             } else {
-              headerListName.textContent = originalName;
+              titleText.textContent = originalName;
             }
           };
           input.addEventListener("blur", saveEdit);
@@ -497,6 +484,7 @@
           });
         }
       }
+
       function addList(name) {
         const newId =
           todoData.lists.length > 0
@@ -509,6 +497,7 @@
         saveData();
         switchToList(newId);
       }
+
       function deleteList(id) {
         if (
           confirm(
@@ -525,12 +514,13 @@
             if (todoData.lists.length > 0) {
               switchToList(todoData.lists[0].id);
             } else {
-              headerListName.textContent = "";
+              currentListHeader.innerHTML = "";
               itemsList.innerHTML = "";
             }
           }
         }
       }
+
       function editList(id, newName) {
         const list = todoData.lists.find((l) => l.id === id);
         if (list) {
@@ -538,10 +528,18 @@
           renderListsMenu();
           saveData();
           if (currentListId === id) {
-            headerListName.textContent = newName;
+            currentListHeader.innerHTML = `
+              <div class="title-container" data-list-id="${id}">
+                <h1 class="title-text text-primary">${newName}</h1>
+                <div class="title-actions">
+                  <button class="btn btn-sm btn-info edit-title-btn" title="Edit Title"><i class="fas fa-pencil-alt"></i></button>
+                  <button class="btn btn-sm btn-danger delete-title-btn" title="Delete List"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>`;
           }
         }
       }
+
       function addItem(listId, text) {
         const newId =
           todoData.items.length > 0
@@ -564,12 +562,14 @@
         renderItems(listId);
         saveData();
       }
+
       function deleteItem(id) {
         todoData.items = todoData.items.filter((item) => item.id !== id);
         renumberItems();
         renderItems(currentListId);
         saveData();
       }
+
       function editItem(id, newText) {
         const item = todoData.items.find((i) => i.id === id);
         if (item) {
@@ -578,11 +578,13 @@
         }
         renderItems(currentListId);
       }
+
       function renumberLists() {
         todoData.lists.forEach((list, index) => {
           list.position = index + 1;
         });
       }
+
       function renumberItems() {
         const listIds = todoData.lists.map((l) => l.id);
         listIds.forEach((listId) => {
@@ -594,6 +596,7 @@
           });
         });
       }
+
       function exportData() {
         const dataStr = JSON.stringify(todoData, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
@@ -604,6 +607,7 @@
         a.click();
         URL.revokeObjectURL(url);
       }
+
       function importData(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -618,7 +622,7 @@
               if (todoData.lists.length > 0) {
                 switchToList(todoData.lists[0].id);
               } else {
-                headerListName.textContent = "";
+                currentListHeader.innerHTML = "";
                 itemsList.innerHTML = "";
               }
               saveData();
@@ -633,11 +637,10 @@
         reader.readAsText(file);
       }
 
-      // --- Initial setup ---
       document.addEventListener("DOMContentLoaded", () => {
         loadData();
         addEventListeners();
-        initializeSortable(); // <-- Call the new function
+        initializeSortable();
       });
     </script>
   </body>

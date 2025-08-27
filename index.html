@@ -66,7 +66,15 @@
       .add-item-form {
         display: flex;
         gap: 5px;
-        margin-top: 10px;
+        margin-top: 15px;
+      }
+      .add-item-form .form-control {
+        border-radius: 20px; /* Rounded input for mobile look */
+        padding: 10px 15px;
+      }
+      .add-item-form .btn-add-item {
+        border-radius: 20px;
+        padding: 10px 15px;
       }
       .item-text,
       .list-name,
@@ -77,11 +85,12 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 5px;
-        padding: 10px;
-        margin-bottom: 8px;
+        background-color: #ffffff; /* Solid white for tile effect */
+        border: none; /* Remove border */
+        border-radius: 8px; /* Rounded corners */
+        padding: 15px; /* Larger padding */
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for elevation */
         transition: background-color 0.2s ease-in-out;
       }
       .title-container {
@@ -89,15 +98,15 @@
         justify-content: space-between;
         align-items: center;
         background-color: #f8f9fa;
-        border: none; /* Removed border */
-        border-radius: 5px;
+        border: none;
+        border-radius: 8px;
         padding: 10px;
         margin-bottom: 8px;
         transition: background-color 0.2s ease-in-out;
       }
       .list-item:hover,
       .title-container:hover {
-        background-color: #dee2e6;
+        background-color: #f1f3f5; /* Subtle hover effect */
       }
       .list-item .item-actions,
       .title-container .title-actions {
@@ -114,13 +123,6 @@
         padding: 0.3rem 0.6rem;
         font-size: 0.8rem;
       }
-      .list-item-container {
-        margin-top: 20px;
-        border-radius: 10px;
-        background-color: #fff;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-      }
       #itemsList {
         padding-left: 0;
       }
@@ -135,7 +137,7 @@
         margin-bottom: 0.5rem;
       }
       .title-text {
-        font-size: 1.5rem; /* Smaller font size for title */
+        font-size: 1.5rem;
         margin-bottom: 0;
       }
       header {
@@ -191,7 +193,7 @@
         </div>
       </div>
     </div>
-    <div class="container py-4">
+    <div class="container py-3">
       <header class="d-flex justify-content-between align-items-start mb-4">
         <div id="currentListHeader"></div>
         <button
@@ -204,18 +206,16 @@
           <i class="fas fa-bars"></i> Lists
         </button>
       </header>
-      <div id="mainContent" class="list-item-container">
-        <ul class="list-items" id="itemsList"></ul>
-        <div class="add-item-form mt-auto">
-          <input
-            type="text"
-            class="form-control add-item-input"
-            placeholder="Add new item..."
-          />
-          <button class="btn btn-success btn-add-item">
-            <i class="fas fa-plus"></i>
-          </button>
-        </div>
+      <ul class="list-items" id="itemsList"></ul>
+      <div class="add-item-form mt-3">
+        <input
+          type="text"
+          class="form-control add-item-input"
+          placeholder="Add new item..."
+        />
+        <button class="btn btn-success btn-add-item">
+          <i class="fas fa-plus"></i>
+        </button>
       </div>
     </div>
 

@@ -254,66 +254,35 @@
         }
       }
 
-      /* ===== Seasonal Theme Toggle ===== */
-      .theme-switch-wrapper {
+      /* ===== Seasonal Theme Toggles - Radio Buttons ===== */
+      .theme-options {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-top: auto;
+        justify-content: space-around;
         padding: 1rem 0;
-        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
       }
-      .theme-switch {
-        display: inline-block;
-        height: 24px;
-        position: relative;
-        width: 100px;
-        margin: 0 10px;
+      .theme-option {
+        text-align: center;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
-      .theme-switch input {
+      .theme-option input {
         display: none;
       }
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: var(--border-color);
-        transition: .4s;
-        border-radius: 34px;
-      }
-      .slider:before {
-        position: absolute;
-        content: "";
-        height: 16px;
-        width: 16px;
-        left: 4px;
-        bottom: 4px;
-        background-color: var(--card-bg-color);
-        transition: .4s;
-        border-radius: 50%;
-      }
-      .theme-1:checked ~ .slider:before {
-          transform: translateX(0px);
-      }
-      .theme-2:checked ~ .slider:before {
-          transform: translateX(25px);
-      }
-      .theme-3:checked ~ .slider:before {
-          transform: translateX(50px);
-      }
-      .theme-4:checked ~ .slider:before {
-          transform: translateX(75px);
-      }
-      .theme-switch-wrapper i {
+      .theme-option i {
+        font-size: 1.5rem;
         color: var(--muted-text-color);
-        font-size: 1.25rem;
         transition: color 0.3s ease;
       }
-      .active-season-icon {
-        color: var(--primary-color) !important;
+      .theme-option span {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--muted-text-color);
+        transition: color 0.3s ease;
+      }
+      .theme-option input:checked + i, .theme-option input:checked + i + span {
+        color: var(--primary-color);
       }
 
       /* ===== Draggable Item Styling ===== */
@@ -343,6 +312,28 @@
         ></button>
       </div>
       <div class="offcanvas-body d-flex flex-column">
+        <div class="theme-options">
+          <label class="theme-option">
+            <input type="radio" name="theme-radio" value="spring" />
+            <i class="fas fa-seedling"></i>
+            <span>Spring</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme-radio" value="summer" />
+            <i class="fas fa-sun"></i>
+            <span>Summer</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme-radio" value="fall" />
+            <i class="fas fa-leaf"></i>
+            <span>Fall</span>
+          </label>
+          <label class="theme-option">
+            <input type="radio" name="theme-radio" value="winter" />
+            <i class="fas fa-snowflake"></i>
+            <span>Winter</span>
+          </label>
+        </div>
         <div class="input-group p-3 border-bottom">
           <input
             type="text"
@@ -368,19 +359,6 @@
             class="d-none"
             accept="application/json"
           />
-        </div>
-        <div class="theme-switch-wrapper">
-          <i class="fas fa-seedling" data-theme-icon="spring"></i>
-          <label class="theme-switch">
-            <input type="radio" name="theme-radio" id="spring-theme" class="theme-1" value="spring" checked/>
-            <input type="radio" name="theme-radio" id="summer-theme" class="theme-2" value="summer"/>
-            <input type="radio" name="theme-radio" id="fall-theme" class="theme-3" value="fall"/>
-            <input type="radio" name="theme-radio" id="winter-theme" class="theme-4" value="winter"/>
-            <div class="slider"></div>
-          </label>
-          <i class="fas fa-sun" data-theme-icon="summer"></i>
-          <i class="fas fa-leaf" data-theme-icon="fall"></i>
-          <i class="fas fa-snowflake" data-theme-icon="winter"></i>
         </div>
       </div>
     </div>
@@ -449,14 +427,8 @@
         docHtml.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
         
-        const activeRadio = document.getElementById(`${theme}-theme`);
+        const activeRadio = document.querySelector(`input[name="theme-radio"][value="${theme}"]`);
         if(activeRadio) activeRadio.checked = true;
-
-        document.querySelectorAll('[data-theme-icon]').forEach(icon => {
-            icon.classList.remove('active-season-icon');
-        });
-        const activeIcon = document.querySelector(`[data-theme-icon="${theme}"]`);
-        if (activeIcon) activeIcon.classList.add('active-season-icon');
       }
 
       function handleThemeChange(e) {
@@ -483,7 +455,6 @@
       function sortData() {
         todoData.lists.sort((a, b) => a.position - b.position);
         todoData.items.sort((a, b) => a.position - b.position);
-        todoData.items.sort((a, b) => a.completed - b.completed);
       }
 
       // --- Rendering Functions ---
@@ -571,7 +542,6 @@
         addItemInput.addEventListener("keypress", (e) => e.key === "Enter" && handleAddItem());
 
         document.addEventListener("click", handleDocumentClick);
-        itemsList.addEventListener('change', handleItemCheckboxChange);
 
         itemsList.addEventListener('touchstart', handleTouchStart, { passive: true });
         itemsList.addEventListener('touchmove', handleTouchMove, { passive: true });
@@ -614,21 +584,6 @@
           } else {
               if (e.target.closest(".edit-item-btn")) toggleInLineEdit("item", itemId);
               if (e.target.closest(".delete-item-btn")) deleteItemWithAnimation(itemId);
-          }
-      }
-
-      function handleItemCheckboxChange(e) {
-          if (e.target.matches('.item-checkbox')) {
-              const listItem = e.target.closest('.list-item');
-              const itemId = parseInt(listItem.dataset.itemId);
-              const item = todoData.items.find(i => i.id === itemId);
-              if (item) {
-                  item.completed = e.target.checked;
-                  listItem.classList.toggle('completed', item.completed);
-                  sortData();
-                  saveData();
-                  setTimeout(() => renderItems(currentListId), 300);
-              }
           }
       }
 

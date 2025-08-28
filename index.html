@@ -649,8 +649,8 @@
 
       function deleteItem(id) {
         todoData.items = todoData.items.filter((item) => item.id !== id);
-        renderItems(currentListId);
         saveData();
+        renderItems(currentListId);
       }
       
       function editItem(id, newText) {

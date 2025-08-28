@@ -17,7 +17,7 @@
       rel="stylesheet"
     />
     <style>
-      /* ===== Theming & Fall Theme ===== */
+      /* ===== Theming & Fall/Winter Themes ===== */
       :root {
         --bg-color: #f8f9fa;
         --text-color: #212529;
@@ -30,14 +30,25 @@
       }
 
       [data-theme="fall"] {
-        --bg-color: #d1b490; /* Soft beige */
-        --text-color: #3f2f2f; /* Dark brown */
-        --card-bg-color: #fffaf0; /* Creamy white */
+        --bg-color: #d1b490;
+        --text-color: #3f2f2f;
+        --card-bg-color: #fffaf0;
         --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        --hover-bg-color: #e6e0d9; /* Lighter beige */
-        --border-color: #b08d57; /* Brown-gold */
-        --muted-text-color: #7b593f; /* Muted brown */
-        --primary-color: #8c3b0d; /* Burnt orange */
+        --hover-bg-color: #e6e0d9;
+        --border-color: #b08d57;
+        --muted-text-color: #7b593f;
+        --primary-color: #8c3b0d;
+      }
+      
+      [data-theme="winter"] {
+        --bg-color: #e0f2f1; /* Light cyan */
+        --text-color: #2c3e50; /* Dark blue-gray */
+        --card-bg-color: #ffffff;
+        --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --hover-bg-color: #cfd8dc; /* Lighter blue-gray */
+        --border-color: #90a4ae; /* Grayish blue */
+        --muted-text-color: #78909c; /* Muted blue */
+        --primary-color: #546e7a; /* Darker blue-gray */
       }
       
       html, body {
@@ -48,6 +59,7 @@
 
       body {
         font-family: 'Poppins', sans-serif;
+        overflow-x: hidden; /* Prevent horizontal scroll on mobile */
       }
 
       /* ===== General Components ===== */
@@ -111,6 +123,14 @@
         margin: 0 10px;
         transition: opacity 0.3s ease, text-decoration 0.3s ease;
       }
+      .add-item-form {
+          display: flex; /* Make add button next to input */
+          align-items: center;
+          gap: 10px;
+      }
+      .add-item-form .form-control {
+          flex-grow: 1;
+      }
 
       .title-container {
         display: flex;
@@ -126,6 +146,7 @@
       }
       .title-text.text-primary {
           color: var(--primary-color) !important;
+          font-size: 1.5rem; /* Make title text smaller */
       }
 
       /* ===== Item States (Completed, Adding) ===== */
@@ -198,7 +219,7 @@
         }
       }
 
-      /* ===== Fall Theme Toggle ===== */
+      /* ===== Fall/Winter Theme Toggle ===== */
       .theme-switch-wrapper {
         display: flex;
         align-items: center;
@@ -310,7 +331,7 @@
                     <input type="checkbox" id="theme-checkbox" />
                     <div class="slider"></div>
                 </label>
-                <i class="fas fa-umbrella-beach"></i>
+                <i class="fas fa-snowflake"></i>
             </div>
             <button
                 class="btn btn-outline-primary ms-3"
@@ -326,7 +347,7 @@
       </header>
       <main class="p-3 rounded-3" style="background-color: var(--card-bg-color); box-shadow: var(--card-shadow);">
           <ul class="list-items list-unstyled" id="itemsList"></ul>
-          <div class="add-item-form mt-3 input-group">
+          <div class="add-item-form mt-3">
             <input
               type="text"
               class="form-control add-item-input"
@@ -368,27 +389,25 @@
       // --- Helper Functions ---
       const isMobile = () => window.innerWidth <= 768;
 
-      // --- Fall Theme Logic ---
+      // --- Theme Logic ---
       function applyTheme(theme) {
         docHtml.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        themeToggle.checked = theme === 'fall';
-        const sunIcon = document.querySelector('.fa-sun');
-        const moonIcon = document.querySelector('.fa-moon');
-        const leafIcon = document.querySelector('.fa-leaf');
-        const beachIcon = document.querySelector('.fa-umbrella-beach');
+        themeToggle.checked = theme === 'winter';
+        const fallIcon = document.querySelector('.fa-leaf');
+        const winterIcon = document.querySelector('.fa-snowflake');
 
         if (theme === 'fall') {
-            if (sunIcon) sunIcon.classList.replace('fa-sun', 'fa-leaf');
-            if (moonIcon) moonIcon.classList.replace('fa-moon', 'fa-umbrella-beach');
+            if (fallIcon) fallIcon.classList.remove('text-muted');
+            if (winterIcon) winterIcon.classList.add('text-muted');
         } else {
-            if (leafIcon) leafIcon.classList.replace('fa-leaf', 'fa-sun');
-            if (beachIcon) beachIcon.classList.replace('fa-umbrella-beach', 'fa-moon');
+            if (fallIcon) fallIcon.classList.add('text-muted');
+            if (winterIcon) winterIcon.classList.remove('text-muted');
         }
       }
 
       function toggleTheme() {
-        const newTheme = docHtml.getAttribute('data-theme') === 'fall' ? 'light' : 'fall';
+        const newTheme = docHtml.getAttribute('data-theme') === 'fall' ? 'winter' : 'fall';
         applyTheme(newTheme);
       }
 
@@ -405,14 +424,12 @@
         if (todoData.lists.length > 0) {
           switchToList(todoData.lists[0].id);
         } else {
-          // If no lists, show empty state in main view too
           renderItems(null); 
         }
       }
 
       function sortData() {
         todoData.lists.sort((a, b) => a.position - b.position);
-        // Sort completed items to the bottom
         todoData.items.sort((a, b) => a.position - b.position);
         todoData.items.sort((a, b) => a.completed - b.completed);
       }
@@ -528,7 +545,7 @@
         if (text && currentListId !== null) {
           addItem(currentListId, text);
           addItemInput.value = "";
-          addItemInput.focus(); // Re-focus for quick entry
+          addItemInput.focus();
         }
       }
       
@@ -556,9 +573,8 @@
               if (item) {
                   item.completed = e.target.checked;
                   listItem.classList.toggle('completed', item.completed);
-                  sortData(); // Re-sort to move completed items
+                  sortData();
                   saveData();
-                  // A full re-render is an easy way to show sorted list
                   setTimeout(() => renderItems(currentListId), 300);
               }
           }
@@ -607,7 +623,6 @@
         });
         sortData();
         renderItems(listId);
-        // Add animation class to the newly added item
         const newItemEl = itemsList.querySelector(`[data-item-id="${newId}"]`);
         if (newItemEl) {
             newItemEl.classList.add('new-item');
@@ -627,7 +642,7 @@
 
       function deleteItem(id) {
         todoData.items = todoData.items.filter((item) => item.id !== id);
-        renderItems(currentListId); // Re-render to remove the element
+        renderItems(currentListId);
         saveData();
       }
       
@@ -641,16 +656,13 @@
 
       // --- Initialization ---
       document.addEventListener("DOMContentLoaded", () => {
-        const savedTheme = localStorage.getItem('theme') || 'light';
+        const savedTheme = localStorage.getItem('theme') || 'fall';
         applyTheme(savedTheme);
         loadData();
         addEventListeners();
         initializeSortable();
       });
 
-      // All other functions (deleteList, editList, import/export, etc.) remain largely the same.
-      // Small modifications may have been made for consistency but the core logic is unchanged.
-      
       function initializeSortable() {
         new Sortable(listsMenu, { animation: 150, ghostClass: "sortable-ghost", onEnd: updateListPositions });
         new Sortable(itemsList, { animation: 150, ghostClass: "sortable-ghost", handle: '.fa-grip-vertical', onEnd: updateItemPositions });

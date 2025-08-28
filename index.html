@@ -142,9 +142,21 @@
       }
       .list-group-item {
         background-color: var(--card-bg-color);
-        margin-bottom: 5px;
+        margin: 5px 15px; /* Added 15px left/right margin */
         border-radius: 8px !important;
         box-shadow: 0 2px 4px var(--shadow-color);
+        display: flex; /* Make it a flexbox */
+        align-items: center; /* Center items vertically */
+        justify-content: space-between; /* Space out the name and drag icon */
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      .list-group-item.swiping,
+      .list-group-item.deleting {
+        transition: none;
+      }
+      .list-group-item.deleting {
+        transform: translateX(-100%);
+        opacity: 0;
       }
       .offcanvas {
         background-color: var(--primary-color);
@@ -172,7 +184,8 @@
 
       /* Base style for actions: hidden by default */
       .list-item .item-actions,
-      .title-container .title-actions {
+      .title-container .title-actions,
+      .list-group-item .list-actions {
         display: flex;
         gap: 5px;
         visibility: hidden;
@@ -180,13 +193,15 @@
       
       /* Show actions on hover (works for desktop hover and mobile tap) */
       .list-item:hover .item-actions,
-      .title-container:hover .title-actions {
+      .title-container:hover .title-actions,
+      .list-group-item:hover .list-actions {
         visibility: visible;
       }
 
       /* On MOBILE, hide the LIST ITEM actions completely (gestures are used instead) */
       @media (max-width: 768px) {
-        .list-item .item-actions {
+        .list-item .item-actions,
+        .list-group-item .list-actions {
           display: none;
         }
       }
@@ -348,8 +363,15 @@
         listItem.className =
           "list-group-item d-flex justify-content-between align-items-center";
         listItem.setAttribute("data-list-id", list.id);
-        listItem.innerHTML = `<span class="list-name">${list.name}</span>`;
+        // Add the drag icon to the list menu item
+        listItem.innerHTML = `<i class="fas fa-grip-vertical me-2"></i><span class="list-name">${list.name}</span>`;
         listItem.addEventListener("click", () => switchToList(list.id));
+        
+        // Add mobile swipe functionality to list menu items
+        listItem.addEventListener('touchstart', (e) => handleTouchStart(e, listItem), { passive: true });
+        listItem.addEventListener('touchmove', (e) => handleTouchMove(e, listItem), { passive: true });
+        listItem.addEventListener('touchend', (e) => handleTouchEnd(e, listItem, true));
+
         return listItem;
       }
 
@@ -413,9 +435,9 @@
         document.addEventListener("click", handleDocumentClick);
 
         // Mobile swipe gestures
-        itemsList.addEventListener('touchstart', handleTouchStart, { passive: true });
-        itemsList.addEventListener('touchmove', handleTouchMove, { passive: true });
-        itemsList.addEventListener('touchend', handleTouchEnd);
+        itemsList.addEventListener('touchstart', (e) => handleTouchStart(e, e.target.closest('.list-item')), { passive: true });
+        itemsList.addEventListener('touchmove', (e) => handleTouchMove(e, e.target.closest('.list-item')), { passive: true });
+        itemsList.addEventListener('touchend', (e) => handleTouchEnd(e, e.target.closest('.list-item'), false));
 
         exportBtn.addEventListener("click", exportData);
         importBtn.addEventListener("click", () => importFile.click());
@@ -470,20 +492,17 @@
           }
       }
 
-      function handleTouchStart(e) {
-          if (!isMobile()) return;
-          const targetItem = e.target.closest('.list-item');
-          if (targetItem) {
-              swipedItem = targetItem;
-              touchStartX = e.touches[0].clientX;
-              touchMoveX = touchStartX;
-              isSwiping = false;
-              swipedItem.classList.add('swiping');
-          }
+      function handleTouchStart(e, targetItem) {
+          if (!isMobile() || !targetItem) return;
+          swipedItem = targetItem;
+          touchStartX = e.touches[0].clientX;
+          touchMoveX = touchStartX;
+          isSwiping = false;
+          swipedItem.classList.add('swiping');
       }
 
-      function handleTouchMove(e) {
-          if (!isMobile() || !swipedItem) return;
+      function handleTouchMove(e, targetItem) {
+          if (!isMobile() || !swipedItem || swipedItem !== targetItem) return;
           touchMoveX = e.touches[0].clientX;
           const diffX = touchMoveX - touchStartX;
 
@@ -496,15 +515,19 @@
           }
       }
 
-      function handleTouchEnd() {
-          if (!isMobile() || !swipedItem) return;
+      function handleTouchEnd(e, targetItem, isList) {
+          if (!isMobile() || !swipedItem || swipedItem !== targetItem) return;
           swipedItem.classList.remove('swiping');
           const diffX = touchMoveX - touchStartX;
           const deleteThreshold = swipedItem.offsetWidth / 3;
 
           if (diffX < -deleteThreshold) { // If swiped far enough left
-              const itemId = parseInt(swipedItem.dataset.itemId);
-              deleteItemWithAnimation(itemId);
+              const id = parseInt(swipedItem.dataset.listId || swipedItem.dataset.itemId);
+              if (isList) {
+                  deleteListWithAnimation(id);
+              } else {
+                  deleteItemWithAnimation(id);
+              }
           } else {
               swipedItem.style.transform = ''; // Snap back
           }
@@ -521,6 +544,8 @@
           ghostClass: "sortable-ghost",
           dragClass: "sortable-drag",
           onEnd: updateListPositions,
+          filter: 'input',
+          preventOnFilter: true
         });
         new Sortable(itemsList, {
           animation: 150,
@@ -624,6 +649,18 @@
         renderListsMenu();
         saveData();
         switchToList(newId);
+      }
+
+      function deleteListWithAnimation(id) {
+          const listElement = document.querySelector(`.list-group-item[data-list-id="${id}"]`);
+          if (listElement) {
+              listElement.classList.add('deleting');
+              listElement.addEventListener('transitionend', () => {
+                  deleteList(id);
+              }, { once: true });
+          } else {
+              deleteList(id);
+          }
       }
 
       function deleteList(id) {

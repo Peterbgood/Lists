@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="fall">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,292 +17,166 @@
       rel="stylesheet"
     />
     <style>
-      /* ===== Theming & Seasonal Themes ===== */
-      :root {
-        --bg-color: #f8f9fa;
-        --text-color: #212529;
-        --card-bg-color: #ffffff;
-        --card-shadow: none;
-        --hover-bg-color: #f1f3f5;
-        --border-color: #dee2e6;
-        --muted-text-color: #6c757d;
-        --primary-color: #0d6efd;
-      }
-
-      [data-theme="spring"] {
-        --bg-color: #d8f3dc;
-        --text-color: #2f4858;
-        --card-bg-color: #f4fff4;
-        --hover-bg-color: #c9e9cc;
-        --border-color: #9cd6ad;
-        --muted-text-color: #6a9c78;
-        --primary-color: #40916c;
-      }
-      
-      [data-theme="summer"] {
-        --bg-color: #fcf8e3;
-        --text-color: #4a4e69;
-        --card-bg-color: #ffffff;
-        --hover-bg-color: #f0ead2;
-        --border-color: #d1b490;
-        --muted-text-color: #9a8c98;
-        --primary-color: #8c3b0d;
-      }
-      
-      [data-theme="fall"] {
-        --bg-color: #d1b490;
-        --text-color: #3f2f2f;
-        --card-bg-color: #fffaf0;
-        --hover-bg-color: #e6e0d9;
-        --border-color: #b08d57;
-        --muted-text-color: #7b593f;
-        --primary-color: #8c3b0d;
-      }
-      
-      [data-theme="winter"] {
-        --bg-color: #e0f2f1;
-        --text-color: #2c3e50;
-        --card-bg-color: #ffffff;
-        --hover-bg-color: #cfd8dc;
-        --border-color: #90a4ae;
-        --muted-text-color: #78909c;
-        --primary-color: #546e7a;
-      }
-      
-      html, body {
-        transition: background-color 0.3s ease, color 0.3s ease;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-      }
-
       body {
+        background-color: #f8f9fa;
         font-family: 'Poppins', sans-serif;
-        overflow-x: hidden;
       }
-
-      /* ===== General Components ===== */
-      .container {
-        max-width: 800px;
+      .offcanvas-body {
+        padding: 0;
       }
-
-      .offcanvas {
-        background-color: var(--bg-color);
-      }
-      .form-control, .btn, .offcanvas-header, .input-group-text {
-        background-color: var(--card-bg-color);
-        color: var(--text-color);
-        border-color: var(--border-color);
-      }
-      .form-control::placeholder {
-        color: var(--muted-text-color);
-      }
-      .form-control:focus {
-        background-color: var(--card-bg-color);
-        color: var(--text-color);
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 0.25rem rgba(var(--primary-color), 0.25);
-      }
-      .btn-close {
-        filter: var(--text-color) == '#e0e0e0' ? invert(1) : none;
-      }
-      .list-group-item {
-        background-color: transparent;
-        border-bottom: 1px solid var(--border-color);
-      }
-
       .list-group-item,
       .list-item,
       .title-container {
         cursor: pointer;
-        touch-action: pan-y;
+        touch-action: pan-y; /* Allow vertical scroll but handle horizontal touch in JS */
       }
-      
-      /* New style for edge-to-edge lists */
-      .list-unstyled {
-          padding-left: 0;
+      .sortable-ghost {
+        background-color: #e9ecef !important;
+        opacity: 0.7;
       }
-      .list-items .list-item {
-          border-radius: 0;
-          box-shadow: none;
-          padding: 15px 0;
-          margin-bottom: 0;
-          border-bottom: 1px solid var(--border-color);
-          background-color: transparent;
-          display: flex;
-          align-items: center;
+      .sortable-drag {
+        opacity: 0.9;
+        transform: scale(1.02);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
       }
-      .list-items .list-item:first-child {
-          padding-top: 0;
+      .offcanvas-title {
+        cursor: pointer;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      .list-items .list-item:last-child {
-          border-bottom: none;
+      .offcanvas-title input {
+        border: 1px solid #ced4da;
+        border-radius: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        width: 75%;
       }
-      .list-items {
-          margin-bottom: 1rem;
+      .list-group-item input {
+        border: none;
+        background: transparent;
+        font-weight: 500;
+        font-size: 1.25rem;
+        width: 100%;
       }
-
-      /* ===== Main List Styling ===== */
-      #itemsList, #listsMenu {
-        position: relative;
-        min-height: 150px;
-      }
-      #listsMenu {
-          flex-grow: 1;
-          overflow-y: auto;
-          min-height: 100px; /* Adjust as needed */
-      }
-      .item-text {
-        flex-grow: 1;
-        margin: 0 10px;
-        transition: opacity 0.3s ease, text-decoration 0.3s ease;
+      .list-group-item .list-item-text {
+        cursor: pointer;
       }
       .add-item-form {
-          display: flex;
-          align-items: center;
-          gap: 10px;
+        display: flex;
+        gap: 5px;
+        margin-top: 15px;
       }
       .add-item-form .form-control {
-          flex-grow: 1;
+        border-radius: 20px; /* Rounded input for mobile look */
+        padding: 10px 15px;
+      }
+      .add-item-form .btn-add-item {
+        border-radius: 20px;
+        padding: 10px 15px;
+      }
+      .item-text,
+      .list-name,
+      .title-text {
+        flex-grow: 1;
+      }
+      .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #ffffff; /* Solid white for tile effect */
+        border: none; /* Remove border */
+        border-radius: 8px; /* Rounded corners */
+        padding: 15px; /* Larger padding */
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for elevation */
+        transition: transform 0.3s ease, opacity 0.3s ease;
+      }
+      .list-item.swiping {
+        transition: none; /* Disable transition during active swipe */
+      }
+      .list-item.deleting {
+        transform: translateX(-100%);
+        opacity: 0;
       }
 
       .title-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0;
-        margin-bottom: 8px;
+        background-color: #f8f9fa;
+        border: none;
         border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 8px;
         transition: background-color 0.2s ease-in-out;
       }
-      .title-text {
-          font-size: 1.5rem;
-          margin: 0;
-          line-height: 1.2;
-      }
-      .title-text.text-primary {
-          color: var(--primary-color) !important;
+      .list-item:hover,
+      .title-container:hover {
+        background-color: #f1f3f5; /* Subtle hover effect */
       }
 
-      /* ===== Item States (Completed, Adding) ===== */
-      @keyframes item-add {
-        from {
-          opacity: 0;
-          transform: translateY(-10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .list-item.new-item {
-        animation: item-add 0.4s ease-out;
-      }
-      .list-item.completed .item-text {
-        text-decoration: line-through;
-        opacity: 0.6;
-      }
-      .list-item.swiping {
-        transition: none;
-      }
-      .list-item.deleting {
-        transform: translateX(-100%);
-        opacity: 0;
+      /* --- Responsive Item Actions --- */
+      .item-actions .btn,
+      .title-actions .btn {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
       }
       
-      /* Reorder button on the right */
-      .list-item .reorder-handle {
-          order: 1;
-          margin-left: auto;
-          margin-right: 0;
-      }
-      .list-item .item-text {
-          margin-left: 0;
-      }
-      .list-item .item-actions {
-          order: 0;
-          margin-right: 10px;
-      }
-      .list-item .item-text {
-          order: -1;
+      /* For DESKTOP: Actions appear on hover */
+      @media (min-width: 769px) {
+        .list-item .item-actions,
+        .title-container .title-actions {
+          display: flex;
+          gap: 5px;
+          visibility: hidden;
+        }
+        .list-item:hover .item-actions,
+        .title-container:hover .title-actions {
+          visibility: visible;
+        }
       }
 
-
-      /* ===== Empty State Placeholder ===== */
-      .empty-list-placeholder {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        color: var(--muted-text-color);
-        pointer-events: none;
-      }
-      .empty-list-placeholder i {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
-      }
-
-      /* ===== Action Buttons ===== */
-      .list-item .item-actions,
-      .title-container .title-actions {
-        display: flex;
-        gap: 5px;
-        visibility: hidden;
-      }
-      .list-item:hover .item-actions,
-      .title-container:hover .title-actions {
-        visibility: visible;
-      }
+      /* For MOBILE: Actions are hidden, gestures are used instead */
       @media (max-width: 768px) {
         .list-item .item-actions {
           display: none;
         }
+         .title-container .title-actions {
+            display: flex;
+            gap: 5px;
+         }
       }
 
-      /* ===== Seasonal Theme Toggles - Radio Buttons ===== */
-      .theme-options {
+      #itemsList {
+        padding-left: 0;
+      }
+      .import-export-buttons {
+        padding: 1rem;
+        border-top: 1px solid #e9ecef;
+      }
+      #currentListHeader {
         display: flex;
-        justify-content: space-around;
-        padding: 1rem 0;
-        border-bottom: 1px solid var(--border-color);
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
       }
-      .theme-option {
-        text-align: center;
-        cursor: pointer;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-      .theme-option input {
-        display: none;
-      }
-      .theme-option i {
+      .title-text {
         font-size: 1.5rem;
-        color: var(--muted-text-color);
-        transition: color 0.3s ease;
+        margin-bottom: 0;
       }
-      .theme-option span {
-        display: block;
-        font-size: 0.8rem;
-        color: var(--muted-text-color);
-        transition: color 0.3s ease;
-      }
-      .theme-option input:checked + i, .theme-option input:checked + i + span {
-        color: var(--primary-color);
-      }
-
-      /* ===== Draggable Item Styling ===== */
-      .sortable-ghost {
-        background-color: var(--hover-bg-color) !important;
-        opacity: 0.7;
-      }
-      .sortable-drag {
-        opacity: 0.9;
+      header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
       }
     </style>
   </head>
   <body>
     <div
-      class="offcanvas offcanvas-end d-flex flex-column"
+      class="offcanvas offcanvas-end"
       tabindex="-1"
       id="offcanvasLists"
       aria-labelledby="offcanvasListsLabel"
@@ -316,43 +190,7 @@
           aria-label="Close"
         ></button>
       </div>
-      <div class="offcanvas-body d-flex flex-column">
-        <div class="theme-options">
-          <label class="theme-option">
-            <input type="radio" name="theme-radio" value="spring" />
-            <i class="fas fa-seedling"></i>
-            <span>Spring</span>
-          </label>
-          <label class="theme-option">
-            <input type="radio" name="theme-radio" value="summer" />
-            <i class="fas fa-sun"></i>
-            <span>Summer</span>
-          </label>
-          <label class="theme-option">
-            <input type="radio" name="theme-radio" value="fall" />
-            <i class="fas fa-leaf"></i>
-            <span>Fall</span>
-          </label>
-          <label class="theme-option">
-            <input type="radio" name="theme-radio" value="winter" />
-            <i class="fas fa-snowflake"></i>
-            <span>Winter</span>
-          </label>
-        </div>
-        <div class="import-export-buttons d-flex justify-content-center gap-2 mt-3 p-3">
-          <button class="btn btn-secondary" id="exportBtn">
-            <i class="fas fa-download me-1"></i>Export
-          </button>
-          <button class="btn btn-secondary" id="importBtn">
-            <i class="fas fa-upload me-1"></i>Import
-          </button>
-          <input
-            type="file"
-            id="importFile"
-            class="d-none"
-            accept="application/json"
-          />
-        </div>
+      <div class="offcanvas-body">
         <div class="input-group p-3 border-bottom">
           <input
             type="text"
@@ -365,37 +203,46 @@
           </button>
         </div>
         <ul class="list-group list-group-flush" id="listsMenu"></ul>
+        <div class="import-export-buttons d-flex justify-content-center gap-2">
+          <button class="btn btn-secondary" id="exportBtn">
+            <i class="fas fa-download me-1"></i>Export Data
+          </button>
+          <button class="btn btn-secondary" id="importBtn">
+            <i class="fas fa-upload me-1"></i>Import Data
+          </button>
+          <input
+            type="file"
+            id="importFile"
+            class="d-none"
+            accept="application/json"
+          />
+        </div>
       </div>
     </div>
-    <div class="container py-4">
-      <header class="d-flex justify-content-between align-items-center mb-4">
+    <div class="container py-3">
+      <header class="d-flex justify-content-between align-items-start mb-4">
         <div id="currentListHeader"></div>
-        <div class="d-flex align-items-center">
-            <button
-                class="btn btn-outline-primary ms-3"
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#offcanvasLists"
-                aria-controls="offcanvasLists"
-            >
-                <i class="fas fa-bars"></i>
-                <span class="d-none d-sm-inline"> Lists</span>
-            </button>
-        </div>
+        <button
+          class="btn btn-outline-primary"
+          type="button"
+          data-bs-toggle="offcanvas"
+          data-bs-target="#offcanvasLists"
+          aria-controls="offcanvasLists"
+        >
+          <i class="fas fa-bars"></i> Lists
+        </button>
       </header>
-      <main class="p-3" style="background-color: var(--card-bg-color);">
-          <ul class="list-items list-unstyled" id="itemsList"></ul>
-          <div class="add-item-form mt-3">
-            <input
-              type="text"
-              class="form-control add-item-input"
-              placeholder="Add new item..."
-            />
-            <button class="btn btn-success btn-add-item">
-              <i class="fas fa-plus"></i>
-            </button>
-          </div>
-      </main>
+      <ul class="list-items" id="itemsList"></ul>
+      <div class="add-item-form mt-3">
+        <input
+          type="text"
+          class="form-control add-item-input"
+          placeholder="Add new item..."
+        />
+        <button class="btn btn-success btn-add-item">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -405,7 +252,6 @@
       let currentListId = null;
 
       // --- DOM Elements ---
-      const docHtml = document.documentElement;
       const listsMenu = document.getElementById("listsMenu");
       const newListNameInput = document.getElementById("newListName");
       const addListBtn = document.getElementById("addListBtn");
@@ -416,7 +262,6 @@
       const exportBtn = document.getElementById("exportBtn");
       const importBtn = document.getElementById("importBtn");
       const importFile = document.getElementById("importFile");
-      const themeRadios = document.querySelectorAll('input[name="theme-radio"]');
 
       // --- Mobile Gesture State ---
       let touchStartX = 0;
@@ -426,19 +271,6 @@
 
       // --- Helper Functions ---
       const isMobile = () => window.innerWidth <= 768;
-
-      // --- Theme Logic ---
-      function applyTheme(theme) {
-        docHtml.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        
-        const activeRadio = document.querySelector(`input[name="theme-radio"][value="${theme}"]`);
-        if(activeRadio) activeRadio.checked = true;
-      }
-
-      function handleThemeChange(e) {
-          applyTheme(e.target.value);
-      }
 
       // --- Data Management ---
       function saveData() {
@@ -452,8 +284,6 @@
         renderListsMenu();
         if (todoData.lists.length > 0) {
           switchToList(todoData.lists[0].id);
-        } else {
-          renderItems(null); 
         }
       }
 
@@ -465,10 +295,6 @@
       // --- Rendering Functions ---
       function renderListsMenu() {
         listsMenu.innerHTML = "";
-        if (todoData.lists.length === 0) {
-          listsMenu.innerHTML = `<div class="empty-list-placeholder"><i class="fas fa-folder-plus"></i><p>Create your first list!</p></div>`;
-          return;
-        }
         todoData.lists.forEach((list) => {
           const listHtml = createListMenuItem(list);
           listsMenu.appendChild(listHtml);
@@ -477,7 +303,8 @@
 
       function createListMenuItem(list) {
         const listItem = document.createElement("li");
-        listItem.className = "list-group-item d-flex justify-content-between align-items-center";
+        listItem.className =
+          "list-group-item d-flex justify-content-between align-items-center";
         listItem.setAttribute("data-list-id", list.id);
         listItem.innerHTML = `<span class="list-name">${list.name}</span>`;
         listItem.addEventListener("click", () => switchToList(list.id));
@@ -498,24 +325,17 @@
             </div>`;
           renderItems(listId);
         }
-        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById("offcanvasLists"));
+        const offcanvas = bootstrap.Offcanvas.getInstance(
+          document.getElementById("offcanvasLists")
+        );
         if (offcanvas) offcanvas.hide();
       }
 
       function renderItems(listId) {
         itemsList.innerHTML = "";
-        const listItems = todoData.items.filter((item) => item.list_id === listId);
-        
-        if (listId === null || todoData.lists.length === 0) {
-            itemsList.innerHTML = `<div class="empty-list-placeholder"><i class="fas fa-list-check"></i><p>Create or select a list to begin.</p></div>`;
-            return;
-        }
-
-        if (listItems.length === 0) {
-            itemsList.innerHTML = `<div class="empty-list-placeholder"><i class="fas fa-plus-circle"></i><p>Add an item to get started!</p></div>`;
-            return;
-        }
-
+        const listItems = todoData.items.filter(
+          (item) => item.list_id === listId
+        );
         listItems.forEach((item) => {
           const itemHtml = createItemHtml(item);
           itemsList.appendChild(itemHtml);
@@ -524,41 +344,43 @@
 
       function createItemHtml(item) {
         const listItem = document.createElement("li");
-        const isCompleted = item.completed ? 'completed' : '';
-        listItem.className = `list-item ${isCompleted}`;
+        listItem.className = "list-item";
         listItem.setAttribute("data-item-id", item.id);
-        
         listItem.innerHTML = `
+          <i class="fas fa-grip-vertical me-2"></i>
           <span class="item-text">${item.text}</span>
           <div class="item-actions">
             <button class="btn btn-sm btn-info edit-item-btn" title="Edit Item"><i class="fas fa-pencil-alt"></i></button>
             <button class="btn btn-sm btn-danger delete-item-btn" title="Delete Item"><i class="fas fa-trash"></i></button>
-          </div>
-          <i class="fas fa-grip-vertical reorder-handle ms-2 text-muted"></i>`;
+          </div>`;
         return listItem;
       }
-      
-      // --- Event Handlers ---
+
+      // --- Event Listeners ---
       function addEventListeners() {
         addListBtn.addEventListener("click", handleAddList);
-        newListNameInput.addEventListener("keypress", (e) => e.key === "Enter" && handleAddList());
+        newListNameInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") handleAddList();
+        });
 
         addItemBtn.addEventListener("click", handleAddItem);
-        addItemInput.addEventListener("keypress", (e) => e.key === "Enter" && handleAddItem());
+        addItemInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") handleAddItem();
+        });
 
         document.addEventListener("click", handleDocumentClick);
 
+        // Mobile swipe gestures
         itemsList.addEventListener('touchstart', handleTouchStart, { passive: true });
         itemsList.addEventListener('touchmove', handleTouchMove, { passive: true });
         itemsList.addEventListener('touchend', handleTouchEnd);
-        
-        themeRadios.forEach(radio => radio.addEventListener('change', handleThemeChange));
 
         exportBtn.addEventListener("click", exportData);
         importBtn.addEventListener("click", () => importFile.click());
         importFile.addEventListener("change", importData);
       }
       
+      // --- Event Handlers ---
       function handleAddList() {
         const name = newListNameInput.value.trim();
         if (name) {
@@ -572,23 +394,37 @@
         if (text && currentListId !== null) {
           addItem(currentListId, text);
           addItemInput.value = "";
-          addItemInput.focus();
         }
       }
       
       function handleDocumentClick(e) {
-          if (e.target.closest(".edit-title-btn")) toggleInLineEdit("list", currentListId);
-          if (e.target.closest(".delete-title-btn")) deleteList(currentListId);
+          // --- Title Actions (All devices) ---
+          if (e.target.closest(".edit-title-btn")) {
+              toggleInLineEdit("list", currentListId);
+          }
+          if (e.target.closest(".delete-title-btn")) {
+              deleteList(currentListId);
+          }
 
+          // --- Item Actions (Desktop Buttons vs Mobile Tap) ---
           const listItem = e.target.closest('.list-item');
           if (!listItem) return;
 
           const itemId = parseInt(listItem.dataset.itemId);
+          
           if (isMobile()) {
-              if (!isSwiping && e.target.closest('.item-text')) toggleInLineEdit("item", itemId);
+              // On mobile, tap the text to edit, ignore if a swipe was just performed
+              if (!isSwiping && e.target.closest('.item-text')) {
+                  toggleInLineEdit("item", itemId);
+              }
           } else {
-              if (e.target.closest(".edit-item-btn")) toggleInLineEdit("item", itemId);
-              if (e.target.closest(".delete-item-btn")) deleteItemWithAnimation(itemId);
+              // On desktop, use the dedicated buttons
+              if (e.target.closest(".edit-item-btn")) {
+                  toggleInLineEdit("item", itemId);
+              }
+              if (e.target.closest(".delete-item-btn")) {
+                  deleteItemWithAnimation(itemId);
+              }
           }
       }
 
@@ -608,8 +444,14 @@
           if (!isMobile() || !swipedItem) return;
           touchMoveX = e.touches[0].clientX;
           const diffX = touchMoveX - touchStartX;
-          if (Math.abs(diffX) > 15) isSwiping = true;
-          if (diffX < 0) swipedItem.style.transform = `translateX(${diffX}px)`;
+
+          if (Math.abs(diffX) > 15) { // Threshold to confirm swipe action
+              isSwiping = true;
+          }
+
+          if (diffX < 0) { // Only allow left swipe
+              swipedItem.style.transform = `translateX(${diffX}px)`;
+          }
       }
 
       function handleTouchEnd() {
@@ -617,156 +459,282 @@
           swipedItem.classList.remove('swiping');
           const diffX = touchMoveX - touchStartX;
           const deleteThreshold = swipedItem.offsetWidth / 3;
-          if (diffX < -deleteThreshold) {
-              deleteItemWithAnimation(parseInt(swipedItem.dataset.itemId));
+
+          if (diffX < -deleteThreshold) { // If swiped far enough left
+              const itemId = parseInt(swipedItem.dataset.itemId);
+              deleteItemWithAnimation(itemId);
           } else {
-              swipedItem.style.transform = '';
+              swipedItem.style.transform = ''; // Snap back
           }
+          
+          // Reset state, use timeout to prevent immediate click after swipe
           setTimeout(() => { isSwiping = false; }, 200);
           swipedItem = null;
       }
       
-      // --- CRUD & Other Operations ---
-      function addItem(listId, text) {
-        const newId = todoData.items.length > 0 ? Math.max(...todoData.items.map((i) => i.id), 0) + 1 : 1;
-        const newPosition = todoData.items.filter(i => i.list_id === listId).length + 1;
-        todoData.items.push({
-          id: newId, list_id: listId, text, position: newPosition, completed: false
+      // --- Drag & Drop ---
+      function initializeSortable() {
+        new Sortable(listsMenu, {
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragClass: "sortable-drag",
+          onEnd: updateListPositions,
+        });
+        new Sortable(itemsList, {
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragClass: "sortable-drag",
+          onEnd: updateItemPositions,
+          filter: 'input', // Prevent starting drag from an input field
+          preventOnFilter: true
+        });
+      }
+
+      function updateListPositions() {
+        const reorderedListElements = Array.from(
+          listsMenu.querySelectorAll(".list-group-item")
+        );
+        reorderedListElements.forEach((el, index) => {
+          const listId = parseInt(el.dataset.listId);
+          const listToUpdate = todoData.lists.find(
+            (list) => list.id === listId
+          );
+          if (listToUpdate) listToUpdate.position = index + 1;
         });
         sortData();
-        renderItems(listId);
-        const newItemEl = itemsList.querySelector(`[data-item-id="${newId}"]`);
-        if (newItemEl) {
-            newItemEl.classList.add('new-item');
-        }
         saveData();
       }
 
+      function updateItemPositions() {
+        const reorderedItemElements = Array.from(
+          itemsList.querySelectorAll(".list-item")
+        );
+        reorderedItemElements.forEach((el, index) => {
+          const itemId = parseInt(el.dataset.itemId);
+          const itemToUpdate = todoData.items.find(
+            (item) => item.id === itemId
+          );
+          if (itemToUpdate) itemToUpdate.position = index + 1;
+        });
+        sortData();
+        saveData();
+      }
+
+      // --- CRUD Operations ---
+      function toggleInLineEdit(type, id) {
+        if (type === "list") {
+            const container = document.querySelector(`.title-container[data-list-id="${id}"]`);
+            const textEl = container.querySelector(".title-text");
+            const originalText = todoData.lists.find(l => l.id === id).name;
+            
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = originalText;
+            input.className = "form-control";
+            textEl.innerHTML = "";
+            textEl.appendChild(input);
+            input.focus();
+
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText && newText !== originalText) {
+                    editList(id, newText);
+                } else {
+                    switchToList(id); // Re-render to restore original text
+                }
+            };
+            input.addEventListener("blur", saveEdit);
+            input.addEventListener("keypress", (e) => e.key === "Enter" && saveEdit());
+
+        } else if (type === "item") {
+            const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
+            const itemTextSpan = itemElement.querySelector(".item-text");
+            const originalText = todoData.items.find(i => i.id === id).text;
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = originalText;
+            input.className = "form-control form-control-sm";
+            itemTextSpan.innerHTML = "";
+            itemTextSpan.appendChild(input);
+            input.focus();
+
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText && newText !== originalText) {
+                    editItem(id, newText);
+                }
+                itemTextSpan.innerHTML = newText || originalText;
+            };
+            input.addEventListener("blur", saveEdit);
+            input.addEventListener("keypress", (e) => e.key === "Enter" && saveEdit());
+        }
+      }
+
+      function addList(name) {
+        const newId =
+          todoData.lists.length > 0
+            ? Math.max(...todoData.lists.map((l) => l.id), 0) + 1
+            : 1;
+        todoData.lists.forEach((list) => (list.position += 1));
+        todoData.lists.push({ id: newId, name, position: 1 });
+        sortData();
+        renderListsMenu();
+        saveData();
+        switchToList(newId);
+      }
+
+      function deleteList(id) {
+        if (
+          confirm(
+            "Are you sure you want to delete this list and all its items?"
+          )
+        ) {
+          todoData.lists = todoData.lists.filter((list) => list.id !== id);
+          todoData.items = todoData.items.filter((item) => item.list_id !== id);
+          renumberLists();
+          renderListsMenu();
+          saveData();
+          if (currentListId === id) {
+            if (todoData.lists.length > 0) {
+              switchToList(todoData.lists[0].id);
+            } else {
+              currentListHeader.innerHTML = "";
+              itemsList.innerHTML = "";
+            }
+          }
+        }
+      }
+
+      function editList(id, newName) {
+        const list = todoData.lists.find((l) => l.id === id);
+        if (list) {
+          list.name = newName;
+          renderListsMenu();
+          saveData();
+          if (currentListId === id) {
+            switchToList(id);
+          }
+        }
+      }
+
+      function addItem(listId, text) {
+        const newId =
+          todoData.items.length > 0
+            ? Math.max(...todoData.items.map((i) => i.id), 0) + 1
+            : 1;
+        const listItems = todoData.items.filter(
+          (item) => item.list_id === listId
+        );
+        const newPosition =
+          listItems.length > 0
+            ? Math.max(...listItems.map((i) => i.position)) + 1
+            : 1;
+        todoData.items.push({
+          id: newId,
+          list_id: listId,
+          text,
+          position: newPosition,
+        });
+        sortData();
+        renderItems(listId);
+        saveData();
+      }
+      
       function deleteItemWithAnimation(id) {
           const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
           if (itemElement) {
               itemElement.classList.add('deleting');
-              itemElement.addEventListener('transitionend', () => deleteItem(id), { once: true });
+              itemElement.addEventListener('transitionend', () => {
+                  deleteItem(id);
+              }, { once: true });
           } else {
+              // Fallback if element not found (e.g., already removed)
               deleteItem(id);
           }
       }
 
       function deleteItem(id) {
         todoData.items = todoData.items.filter((item) => item.id !== id);
+        renumberItems();
+        renderItems(currentListId); // Re-render the list without the deleted item
         saveData();
-        renderItems(currentListId);
       }
-      
+
       function editItem(id, newText) {
         const item = todoData.items.find((i) => i.id === id);
         if (item) {
           item.text = newText;
           saveData();
         }
+        // No re-render needed as the DOM is updated by the input blur event
+      }
+
+      function renumberLists() {
+        todoData.lists.forEach((list, index) => {
+          list.position = index + 1;
+        });
+      }
+
+      function renumberItems() {
+        const listIds = todoData.lists.map((l) => l.id);
+        listIds.forEach((listId) => {
+          const itemsInList = todoData.items
+            .filter((item) => item.list_id === listId)
+            .sort((a, b) => a.position - b.position);
+          itemsInList.forEach((item, index) => {
+            item.position = index + 1;
+          });
+        });
+      }
+
+      // --- Import/Export ---
+      function exportData() {
+        const dataStr = JSON.stringify(todoData, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "todo_data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
+      function importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedData = JSON.parse(event.target.result);
+            if (importedData.lists && importedData.items) {
+              todoData = importedData;
+              sortData();
+              renderListsMenu();
+              if (todoData.lists.length > 0) {
+                switchToList(todoData.lists[0].id);
+              } else {
+                currentListHeader.innerHTML = "";
+                itemsList.innerHTML = "";
+              }
+              saveData();
+              alert("Data imported successfully!");
+            } else {
+              alert("Invalid JSON file format.");
+            }
+          } catch (error) {
+            alert("Failed to parse JSON file.");
+          }
+        };
+        reader.readAsText(file);
       }
 
       // --- Initialization ---
       document.addEventListener("DOMContentLoaded", () => {
-        const savedTheme = localStorage.getItem('theme') || 'fall';
-        applyTheme(savedTheme);
         loadData();
         addEventListeners();
         initializeSortable();
       });
-
-      function initializeSortable() {
-        new Sortable(listsMenu, { animation: 150, ghostClass: "sortable-ghost", onEnd: updateListPositions });
-        new Sortable(itemsList, { animation: 150, ghostClass: "sortable-ghost", handle: '.reorder-handle', onEnd: updateItemPositions });
-      }
-      function updateListPositions() {
-        Array.from(listsMenu.querySelectorAll(".list-group-item")).forEach((el, index) => {
-          const list = todoData.lists.find(l => l.id === parseInt(el.dataset.listId));
-          if(list) list.position = index;
-        });
-        sortData(); saveData();
-      }
-      function updateItemPositions() {
-        Array.from(itemsList.querySelectorAll(".list-item")).forEach((el, index) => {
-          const item = todoData.items.find(i => i.id === parseInt(el.dataset.itemId));
-          if(item) item.position = index;
-        });
-        sortData(); saveData();
-      }
-      function toggleInLineEdit(type, id) {
-        if (type === "list") {
-            const container = document.querySelector(`.title-container[data-list-id="${id}"]`);
-            const textEl = container.querySelector(".title-text");
-            const originalText = todoData.lists.find(l => l.id === id).name;
-            const input = document.createElement("input");
-            input.type = "text"; input.value = originalText; input.className = "form-control";
-            textEl.innerHTML = ""; textEl.appendChild(input); input.focus();
-            const save = () => (input.value.trim() && input.value.trim() !== originalText) ? editList(id, input.value.trim()) : switchToList(id);
-            input.addEventListener("blur", save);
-            input.addEventListener("keypress", (e) => e.key === "Enter" && save());
-        } else if (type === "item") {
-            const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
-            const span = itemElement.querySelector(".item-text");
-            const originalText = todoData.items.find(i => i.id === id).text;
-            const input = document.createElement("input");
-            input.type = "text"; input.value = originalText; input.className = "form-control form-control-sm";
-            span.innerHTML = ""; span.appendChild(input); input.focus();
-            const save = () => {
-                const newText = input.value.trim();
-                if (newText && newText !== originalText) editItem(id, newText);
-                span.innerHTML = newText || originalText;
-            };
-            input.addEventListener("blur", save);
-            input.addEventListener("keypress", (e) => e.key === "Enter" && save());
-        }
-      }
-      function addList(name) {
-        const newId = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.id)) + 1 : 1;
-        todoData.lists.push({ id: newId, name, position: -1 });
-        sortData(); 
-        renderListsMenu(); 
-        saveData(); 
-        switchToList(newId);
-      }
-      function deleteList(id) {
-        if (confirm("Delete this list and all its items?")) {
-          todoData.lists = todoData.lists.filter(l => l.id !== id);
-          todoData.items = todoData.items.filter(i => i.list_id !== id);
-          saveData(); renderListsMenu();
-          if (currentListId === id) {
-            if (todoData.lists.length > 0) switchToList(todoData.lists[0].id);
-            else { currentListHeader.innerHTML = ""; renderItems(null); }
-          }
-        }
-      }
-      function editList(id, newName) {
-        const list = todoData.lists.find(l => l.id === id);
-        if (list) { list.name = newName; saveData(); renderListsMenu(); if (currentListId === id) switchToList(id); }
-      }
-      function exportData() {
-        const dataStr = JSON.stringify(todoData, null, 2);
-        const blob = new Blob([dataStr], { type: "application/json" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "todo_data.json"; a.click(); URL.revokeObjectURL(a.href);
-      }
-      function importData(e) {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          try {
-            const data = JSON.parse(event.target.result);
-            if (data.lists && data.items) {
-              todoData = data; sortData(); saveData();
-              renderListsMenu();
-              if (todoData.lists.length > 0) switchToList(todoData.lists[0].id);
-              else { currentListHeader.innerHTML = ""; renderItems(null); }
-              alert("Data imported!");
-            } else alert("Invalid file format.");
-          } catch (error) { alert("Failed to parse file."); }
-        };
-        reader.readAsText(file);
-      }
     </script>
   </body>
 </html>

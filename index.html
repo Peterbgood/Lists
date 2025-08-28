@@ -117,36 +117,32 @@
         background-color: #f1f3f5; /* Subtle hover effect */
       }
 
-      /* --- Responsive Item Actions --- */
+      /* --- Responsive Item/Title Actions --- */
       .item-actions .btn,
       .title-actions .btn {
         padding: 0.3rem 0.6rem;
         font-size: 0.8rem;
       }
+
+      /* Base style for actions: hidden by default */
+      .list-item .item-actions,
+      .title-container .title-actions {
+        display: flex;
+        gap: 5px;
+        visibility: hidden;
+      }
       
-      /* For DESKTOP: Actions appear on hover */
-      @media (min-width: 769px) {
-        .list-item .item-actions,
-        .title-container .title-actions {
-          display: flex;
-          gap: 5px;
-          visibility: hidden;
-        }
-        .list-item:hover .item-actions,
-        .title-container:hover .title-actions {
-          visibility: visible;
-        }
+      /* Show actions on hover (works for desktop hover and mobile tap) */
+      .list-item:hover .item-actions,
+      .title-container:hover .title-actions {
+        visibility: visible;
       }
 
-      /* For MOBILE: Actions are hidden, gestures are used instead */
+      /* On MOBILE, hide the LIST ITEM actions completely (gestures are used instead) */
       @media (max-width: 768px) {
         .list-item .item-actions {
           display: none;
         }
-         .title-container .title-actions {
-            display: flex;
-            gap: 5px;
-         }
       }
 
       #itemsList {

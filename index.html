@@ -722,8 +722,11 @@
       }
       function addList(name) {
         const newId = todoData.lists.length > 0 ? Math.max(...todoData.lists.map(l => l.id)) + 1 : 1;
-        todoData.lists.push({ id: newId, name, position: todoData.lists.length });
-        sortData(); renderListsMenu(); saveData(); switchToList(newId);
+        todoData.lists.push({ id: newId, name, position: -1 });
+        sortData(); 
+        renderListsMenu(); 
+        saveData(); 
+        switchToList(newId);
       }
       function deleteList(id) {
         if (confirm("Delete this list and all its items?")) {

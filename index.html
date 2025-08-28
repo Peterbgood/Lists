@@ -28,7 +28,7 @@
       .list-item,
       .title-container {
         cursor: pointer;
-        touch-action: none;
+        touch-action: pan-y; /* Allow vertical scroll but handle horizontal touch in JS */
       }
       .sortable-ghost {
         background-color: #e9ecef !important;
@@ -91,8 +91,16 @@
         padding: 15px; /* Larger padding */
         margin-bottom: 10px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for elevation */
-        transition: background-color 0.2s ease-in-out;
+        transition: transform 0.3s ease, opacity 0.3s ease;
       }
+      .list-item.swiping {
+        transition: none; /* Disable transition during active swipe */
+      }
+      .list-item.deleting {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+
       .title-container {
         display: flex;
         justify-content: space-between;
@@ -108,21 +116,39 @@
       .title-container:hover {
         background-color: #f1f3f5; /* Subtle hover effect */
       }
-      .list-item .item-actions,
-      .title-container .title-actions {
-        display: flex;
-        gap: 5px;
-        visibility: hidden;
-      }
-      .list-item:hover .item-actions,
-      .title-container:hover .title-actions {
-        visibility: visible;
-      }
+
+      /* --- Responsive Item Actions --- */
       .item-actions .btn,
       .title-actions .btn {
         padding: 0.3rem 0.6rem;
         font-size: 0.8rem;
       }
+      
+      /* For DESKTOP: Actions appear on hover */
+      @media (min-width: 769px) {
+        .list-item .item-actions,
+        .title-container .title-actions {
+          display: flex;
+          gap: 5px;
+          visibility: hidden;
+        }
+        .list-item:hover .item-actions,
+        .title-container:hover .title-actions {
+          visibility: visible;
+        }
+      }
+
+      /* For MOBILE: Actions are hidden, gestures are used instead */
+      @media (max-width: 768px) {
+        .list-item .item-actions {
+          display: none;
+        }
+         .title-container .title-actions {
+            display: flex;
+            gap: 5px;
+         }
+      }
+
       #itemsList {
         padding-left: 0;
       }
@@ -225,6 +251,7 @@
       let todoData = { lists: [], items: [] };
       let currentListId = null;
 
+      // --- DOM Elements ---
       const listsMenu = document.getElementById("listsMenu");
       const newListNameInput = document.getElementById("newListName");
       const addListBtn = document.getElementById("addListBtn");
@@ -236,6 +263,16 @@
       const importBtn = document.getElementById("importBtn");
       const importFile = document.getElementById("importFile");
 
+      // --- Mobile Gesture State ---
+      let touchStartX = 0;
+      let touchMoveX = 0;
+      let swipedItem = null;
+      let isSwiping = false;
+
+      // --- Helper Functions ---
+      const isMobile = () => window.innerWidth <= 768;
+
+      // --- Data Management ---
       function saveData() {
         localStorage.setItem("todoData", JSON.stringify(todoData));
       }
@@ -255,6 +292,7 @@
         todoData.items.sort((a, b) => a.position - b.position);
       }
 
+      // --- Rendering Functions ---
       function renderListsMenu() {
         listsMenu.innerHTML = "";
         todoData.lists.forEach((list) => {
@@ -318,62 +356,138 @@
         return listItem;
       }
 
+      // --- Event Listeners ---
       function addEventListeners() {
-        addListBtn.addEventListener("click", () => {
-          const name = newListNameInput.value.trim();
-          if (name) {
-            addList(name);
-            newListNameInput.value = "";
-          }
-        });
+        addListBtn.addEventListener("click", handleAddList);
         newListNameInput.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            const name = newListNameInput.value.trim();
-            if (name) {
-              addList(name);
-              newListNameInput.value = "";
-            }
-          }
+          if (e.key === "Enter") handleAddList();
         });
-        addItemBtn.addEventListener("click", () => {
-          const text = addItemInput.value.trim();
-          if (text && currentListId !== null) {
-            addItem(currentListId, text);
-            addItemInput.value = "";
-          }
-        });
+
+        addItemBtn.addEventListener("click", handleAddItem);
         addItemInput.addEventListener("keypress", (e) => {
-          if (e.key === "Enter") {
-            const text = addItemInput.value.trim();
-            if (text && currentListId !== null) {
-              addItem(currentListId, text);
-              addItemInput.value = "";
-            }
-          }
+          if (e.key === "Enter") handleAddItem();
         });
-        document.addEventListener("click", (e) => {
-          if (e.target.closest(".edit-title-btn") && currentListId !== null) {
-            toggleInLineEdit("list", currentListId);
-          }
-          if (e.target.closest(".delete-title-btn") && currentListId !== null) {
-            deleteList(currentListId);
-          }
-          if (e.target.closest(".edit-item-btn")) {
-            const itemId = parseInt(
-              e.target.closest(".list-item").dataset.itemId
-            );
-            toggleInLineEdit("item", itemId);
-          }
-          if (e.target.closest(".delete-item-btn")) {
-            const itemId = parseInt(
-              e.target.closest(".list-item").dataset.itemId
-            );
-            deleteItem(itemId);
-          }
-        });
+
+        document.addEventListener("click", handleDocumentClick);
+
+        // Mobile swipe gestures
+        itemsList.addEventListener('touchstart', handleTouchStart, { passive: true });
+        itemsList.addEventListener('touchmove', handleTouchMove, { passive: true });
+        itemsList.addEventListener('touchend', handleTouchEnd);
+
         exportBtn.addEventListener("click", exportData);
         importBtn.addEventListener("click", () => importFile.click());
         importFile.addEventListener("change", importData);
+      }
+      
+      // --- Event Handlers ---
+      function handleAddList() {
+        const name = newListNameInput.value.trim();
+        if (name) {
+          addList(name);
+          newListNameInput.value = "";
+        }
+      }
+
+      function handleAddItem() {
+        const text = addItemInput.value.trim();
+        if (text && currentListId !== null) {
+          addItem(currentListId, text);
+          addItemInput.value = "";
+        }
+      }
+      
+      function handleDocumentClick(e) {
+          // --- Title Actions (All devices) ---
+          if (e.target.closest(".edit-title-btn")) {
+              toggleInLineEdit("list", currentListId);
+          }
+          if (e.target.closest(".delete-title-btn")) {
+              deleteList(currentListId);
+          }
+
+          // --- Item Actions (Desktop Buttons vs Mobile Tap) ---
+          const listItem = e.target.closest('.list-item');
+          if (!listItem) return;
+
+          const itemId = parseInt(listItem.dataset.itemId);
+          
+          if (isMobile()) {
+              // On mobile, tap the text to edit, ignore if a swipe was just performed
+              if (!isSwiping && e.target.closest('.item-text')) {
+                  toggleInLineEdit("item", itemId);
+              }
+          } else {
+              // On desktop, use the dedicated buttons
+              if (e.target.closest(".edit-item-btn")) {
+                  toggleInLineEdit("item", itemId);
+              }
+              if (e.target.closest(".delete-item-btn")) {
+                  deleteItemWithAnimation(itemId);
+              }
+          }
+      }
+
+      function handleTouchStart(e) {
+          if (!isMobile()) return;
+          const targetItem = e.target.closest('.list-item');
+          if (targetItem) {
+              swipedItem = targetItem;
+              touchStartX = e.touches[0].clientX;
+              touchMoveX = touchStartX;
+              isSwiping = false;
+              swipedItem.classList.add('swiping');
+          }
+      }
+
+      function handleTouchMove(e) {
+          if (!isMobile() || !swipedItem) return;
+          touchMoveX = e.touches[0].clientX;
+          const diffX = touchMoveX - touchStartX;
+
+          if (Math.abs(diffX) > 15) { // Threshold to confirm swipe action
+              isSwiping = true;
+          }
+
+          if (diffX < 0) { // Only allow left swipe
+              swipedItem.style.transform = `translateX(${diffX}px)`;
+          }
+      }
+
+      function handleTouchEnd() {
+          if (!isMobile() || !swipedItem) return;
+          swipedItem.classList.remove('swiping');
+          const diffX = touchMoveX - touchStartX;
+          const deleteThreshold = swipedItem.offsetWidth / 3;
+
+          if (diffX < -deleteThreshold) { // If swiped far enough left
+              const itemId = parseInt(swipedItem.dataset.itemId);
+              deleteItemWithAnimation(itemId);
+          } else {
+              swipedItem.style.transform = ''; // Snap back
+          }
+          
+          // Reset state, use timeout to prevent immediate click after swipe
+          setTimeout(() => { isSwiping = false; }, 200);
+          swipedItem = null;
+      }
+      
+      // --- Drag & Drop ---
+      function initializeSortable() {
+        new Sortable(listsMenu, {
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragClass: "sortable-drag",
+          onEnd: updateListPositions,
+        });
+        new Sortable(itemsList, {
+          animation: 150,
+          ghostClass: "sortable-ghost",
+          dragClass: "sortable-drag",
+          onEnd: updateItemPositions,
+          filter: 'input', // Prevent starting drag from an input field
+          preventOnFilter: true
+        });
       }
 
       function updateListPositions() {
@@ -406,82 +520,54 @@
         saveData();
       }
 
-      function initializeSortable() {
-        new Sortable(listsMenu, {
-          animation: 150,
-          ghostClass: "sortable-ghost",
-          dragClass: "sortable-drag",
-          onEnd: function () {
-            updateListPositions();
-          },
-        });
-        new Sortable(itemsList, {
-          animation: 150,
-          ghostClass: "sortable-ghost",
-          dragClass: "sortable-drag",
-          onEnd: function () {
-            updateItemPositions();
-          },
-        });
-      }
-
+      // --- CRUD Operations ---
       function toggleInLineEdit(type, id) {
         if (type === "list") {
-          const list = todoData.lists.find((l) => l.id === id);
-          if (!list) return;
-          const titleContainer = document.querySelector(
-            `.title-container[data-list-id="${id}"]`
-          );
-          const titleText = titleContainer.querySelector(".title-text");
-          const originalName = titleText.textContent.replace(" 📝", "");
-          const input = document.createElement("input");
-          input.type = "text";
-          input.value = originalName;
-          input.className = "form-control";
-          titleText.innerHTML = "";
-          titleText.appendChild(input);
-          input.focus();
-          const saveEdit = () => {
-            const newName = input.value.trim();
-            if (newName && newName !== originalName) {
-              editList(id, newName);
-            } else {
-              titleText.textContent = originalName;
-            }
-          };
-          input.addEventListener("blur", saveEdit);
-          input.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-              saveEdit();
-            }
-          });
+            const container = document.querySelector(`.title-container[data-list-id="${id}"]`);
+            const textEl = container.querySelector(".title-text");
+            const originalText = todoData.lists.find(l => l.id === id).name;
+            
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = originalText;
+            input.className = "form-control";
+            textEl.innerHTML = "";
+            textEl.appendChild(input);
+            input.focus();
+
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText && newText !== originalText) {
+                    editList(id, newText);
+                } else {
+                    switchToList(id); // Re-render to restore original text
+                }
+            };
+            input.addEventListener("blur", saveEdit);
+            input.addEventListener("keypress", (e) => e.key === "Enter" && saveEdit());
+
         } else if (type === "item") {
-          const item = todoData.items.find((i) => i.id === id);
-          if (!item) return;
-          const itemElement = document.querySelector(
-            `.list-item[data-item-id="${id}"]`
-          );
-          const itemTextSpan = itemElement.querySelector(".item-text");
-          const originalText = itemTextSpan.textContent;
-          const input = document.createElement("input");
-          input.type = "text";
-          input.value = originalText;
-          itemTextSpan.innerHTML = "";
-          itemTextSpan.appendChild(input);
-          input.focus();
-          const saveEdit = () => {
-            const newText = input.value.trim();
-            if (newText && newText !== originalText) {
-              editItem(id, newText);
-            }
-            itemTextSpan.innerHTML = newText || originalText;
-          };
-          input.addEventListener("blur", saveEdit);
-          input.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-              saveEdit();
-            }
-          });
+            const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
+            const itemTextSpan = itemElement.querySelector(".item-text");
+            const originalText = todoData.items.find(i => i.id === id).text;
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = originalText;
+            input.className = "form-control form-control-sm";
+            itemTextSpan.innerHTML = "";
+            itemTextSpan.appendChild(input);
+            input.focus();
+
+            const saveEdit = () => {
+                const newText = input.value.trim();
+                if (newText && newText !== originalText) {
+                    editItem(id, newText);
+                }
+                itemTextSpan.innerHTML = newText || originalText;
+            };
+            input.addEventListener("blur", saveEdit);
+            input.addEventListener("keypress", (e) => e.key === "Enter" && saveEdit());
         }
       }
 
@@ -507,7 +593,6 @@
           todoData.lists = todoData.lists.filter((list) => list.id !== id);
           todoData.items = todoData.items.filter((item) => item.list_id !== id);
           renumberLists();
-          renumberItems();
           renderListsMenu();
           saveData();
           if (currentListId === id) {
@@ -528,14 +613,7 @@
           renderListsMenu();
           saveData();
           if (currentListId === id) {
-            currentListHeader.innerHTML = `
-              <div class="title-container" data-list-id="${id}">
-                <h1 class="title-text text-primary">${newName}</h1>
-                <div class="title-actions">
-                  <button class="btn btn-sm btn-info edit-title-btn" title="Edit Title"><i class="fas fa-pencil-alt"></i></button>
-                  <button class="btn btn-sm btn-danger delete-title-btn" title="Delete List"><i class="fas fa-trash"></i></button>
-                </div>
-              </div>`;
+            switchToList(id);
           }
         }
       }
@@ -562,11 +640,24 @@
         renderItems(listId);
         saveData();
       }
+      
+      function deleteItemWithAnimation(id) {
+          const itemElement = document.querySelector(`.list-item[data-item-id="${id}"]`);
+          if (itemElement) {
+              itemElement.classList.add('deleting');
+              itemElement.addEventListener('transitionend', () => {
+                  deleteItem(id);
+              }, { once: true });
+          } else {
+              // Fallback if element not found (e.g., already removed)
+              deleteItem(id);
+          }
+      }
 
       function deleteItem(id) {
         todoData.items = todoData.items.filter((item) => item.id !== id);
         renumberItems();
-        renderItems(currentListId);
+        renderItems(currentListId); // Re-render the list without the deleted item
         saveData();
       }
 
@@ -576,7 +667,7 @@
           item.text = newText;
           saveData();
         }
-        renderItems(currentListId);
+        // No re-render needed as the DOM is updated by the input blur event
       }
 
       function renumberLists() {
@@ -597,6 +688,7 @@
         });
       }
 
+      // --- Import/Export ---
       function exportData() {
         const dataStr = JSON.stringify(todoData, null, 2);
         const blob = new Blob([dataStr], { type: "application/json" });
@@ -637,6 +729,7 @@
         reader.readAsText(file);
       }
 
+      // --- Initialization ---
       document.addEventListener("DOMContentLoaded", () => {
         loadData();
         addEventListeners();

@@ -17,8 +17,15 @@
       rel="stylesheet"
     />
     <style>
+      :root {
+        --primary-color: #d8f3dc;
+        --secondary-color: #98c1d9;
+        --background-color: #f8f9fa;
+        --card-bg-color: #ffffff;
+        --shadow-color: rgba(0, 0, 0, 0.1);
+      }
       body {
-        background-color: #f8f9fa;
+        background-color: var(--primary-color);
         font-family: 'Poppins', sans-serif;
       }
       .offcanvas-body {
@@ -37,7 +44,7 @@
       .sortable-drag {
         opacity: 0.9;
         transform: scale(1.02);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 8px var(--shadow-color);
         z-index: 1000;
       }
       .offcanvas-title {
@@ -63,18 +70,35 @@
       .list-group-item .list-item-text {
         cursor: pointer;
       }
+      /* Updated styling for add item input and button */
       .add-item-form {
         display: flex;
-        gap: 5px;
+        align-items: stretch; /* Stretch items to be the same height */
+        gap: 0;
         margin-top: 15px;
+        border: 2px solid var(--card-bg-color); /* Add a border to the whole group */
+        border-radius: 25px; /* Fully rounded container */
+        overflow: hidden; /* Hide the corners of the inner elements */
+        background-color: var(--card-bg-color);
+        box-shadow: 0 4px 8px var(--shadow-color);
       }
       .add-item-form .form-control {
-        border-radius: 20px; /* Rounded input for mobile look */
+        border: none; /* Remove border from the input itself */
+        background: transparent;
+        border-radius: 0;
         padding: 10px 15px;
+        flex-grow: 1; /* Allow input to fill available space */
       }
       .add-item-form .btn-add-item {
-        border-radius: 20px;
+        border: none; /* Remove border from the button */
+        border-radius: 0;
         padding: 10px 15px;
+        background-color: var(--primary-color); /* Use theme color */
+        color: #1a5319; /* Darker text for contrast on primary color */
+        transition: background-color 0.2s ease;
+      }
+      .add-item-form .btn-add-item:hover {
+        background-color: #c9e6ce; /* A slightly darker shade on hover */
       }
       .item-text,
       .list-name,
@@ -85,12 +109,12 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #ffffff; /* Solid white for tile effect */
+        background-color: var(--card-bg-color); /* Solid white for tile effect */
         border: none; /* Remove border */
         border-radius: 8px; /* Rounded corners */
         padding: 15px; /* Larger padding */
         margin-bottom: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for elevation */
+        box-shadow: 0 2px 4px var(--shadow-color); /* Subtle shadow for elevation */
         transition: transform 0.3s ease, opacity 0.3s ease;
       }
       .list-item.swiping {
@@ -105,7 +129,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background-color: #f8f9fa;
+        background-color: var(--primary-color);
         border: none;
         border-radius: 8px;
         padding: 10px;
@@ -115,6 +139,28 @@
       .list-item:hover,
       .title-container:hover {
         background-color: #f1f3f5; /* Subtle hover effect */
+      }
+      .list-group-item {
+        background-color: var(--card-bg-color);
+        margin-bottom: 5px;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 4px var(--shadow-color);
+      }
+      .offcanvas {
+        background-color: var(--primary-color);
+      }
+      .btn-outline-primary {
+        --bs-btn-color: #1a5319;
+        --bs-btn-border-color: #1a5319;
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: #1a5319;
+        --bs-btn-hover-border-color: #1a5319;
+        --bs-btn-active-color: #fff;
+        --bs-btn-active-bg: #1a5319;
+        --bs-btn-active-border-color: #1a5319;
+      }
+      .text-primary {
+        color: #1a5319 !important;
       }
 
       /* --- Responsive Item/Title Actions --- */
